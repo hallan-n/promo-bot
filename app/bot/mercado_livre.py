@@ -102,9 +102,7 @@ async def run():
                 "--ignore-certificate-errors",
             ],
         )
-        print("Iniciando BOT do Mercado Livre")
         page = await get_stealth_page(browser)
-        print("Aplicando modo stealth no navegador")
         page.on(
             "response",
             lambda response: asyncio.create_task(handle_target_response(response)),
@@ -118,8 +116,6 @@ async def run():
                 product = extract_data(item)
                 if not product:
                     continue
-                await add(f"{index}", product.dict())
+                await add(f"mercadolivre-{index}", product.dict())
                 index += 1
-            print(f"{index} Produtos capturados")
-        print("Captura finalizada")
         await browser.close()

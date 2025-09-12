@@ -1,6 +1,6 @@
 import asyncio
-from bot.mercado_livre import run
-
+# from bot.mercado_livre import run
+from bot.amazon import run
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    session = asyncio.run(run())

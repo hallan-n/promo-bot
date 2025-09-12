@@ -1,4 +1,7 @@
+import json
 from playwright.async_api import Browser, Page
+
+from models import Session
 
 
 async def get_stealth_page(browser: Browser, mobile: bool = False) -> Page:
@@ -60,3 +63,25 @@ async def get_stealth_page(browser: Browser, mobile: bool = False) -> Page:
     """
     )
     return page
+
+
+async def inject_session(page: Page, session: Session):
+    await page.add_init_script(
+        f"""() => {{
+            const data = {json.dumps(session.local_storage)};
+            for (const [key, value] of Object.entries(data)) {{
+                localStorage.setItem(key, value);
+            }}
+        }}"""
+    )
+
+    await page.add_init_script(
+        f"""() => {{
+            const data = {json.dumps(session.session_storage)};
+            for (const [key, value] of Object.entries(data)) {{
+                sessionStorage.setItem(key, value);
+            }}
+        }}"""
+    )
+    await page.context.clear_cookies()
+    await page.context.add_cookies(session.cookies)

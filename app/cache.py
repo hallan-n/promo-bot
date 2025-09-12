@@ -11,16 +11,16 @@ async def get_redis():
     finally:
         await redis.aclose()
 
-async def add(key: str, value: dict, ttl: int = None):
+async def add(key: str, value: dict, ttl: int = None) -> bool:
     async with get_redis() as redis:
         return await redis.set(key, json.dumps(value), ex=ttl)
 
-async def get(key: str):
+async def get(key: str) -> dict:
     async with get_redis() as redis:
         value = await redis.get(key)
-        return json.loads(value)
+        return json.loads(value) if value else None
 
-async def get_all():
+async def get_all() -> dict:
     async with get_redis() as redis:
         keys = await redis.keys("*")
         result = {}
