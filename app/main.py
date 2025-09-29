@@ -1,6 +1,9 @@
 import asyncio
-# from bot.mercado_livre import run
-from bot.amazon import run
+from bronze.amazon import AmazonBronze
+from bronze.mercadolivre import MercadolivreBronze
 
 if __name__ == "__main__":
-    session = asyncio.run(run())
+    amazon = AmazonBronze()
+    mercadolivre = MercadolivreBronze()
+    amazon = asyncio.run(amazon.exec())
+    # mercadolivre = asyncio.run(mercadolivre.exec())
