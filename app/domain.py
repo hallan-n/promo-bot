@@ -10,7 +10,8 @@ class BaseProcessor(ABC):
     @abstractmethod
     async def exec(self):
         ...
-    
+
+class BaseWebDriver:
     async def get_stealth_page(self, browser: Browser) -> Page:
         config = {
             "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",

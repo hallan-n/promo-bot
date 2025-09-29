@@ -1,5 +1,4 @@
 from redis.asyncio import Redis
-import json
 from contextlib import asynccontextmanager
 
 
@@ -11,20 +10,10 @@ async def get_redis():
     finally:
         await redis.aclose()
 
-async def add(key: str, value: dict, ttl: int = None) -> bool:
+async def add(key: str, value: str, ttl: int = None) -> bool:
     async with get_redis() as redis:
-        return await redis.set(key, json.dumps(value), ex=ttl)
+        return await redis.set(key, value, ex=ttl)
 
-async def get(key: str) -> dict:
+async def get(key: str) -> str | None:
     async with get_redis() as redis:
-        value = await redis.get(key)
-        return json.loads(value) if value else None
-
-async def get_all() -> dict:
-    async with get_redis() as redis:
-        keys = await redis.keys("*")
-        result = {}
-        for key in keys:
-            value = await redis.get(key)
-            result[key] = json.loads(value)
-        return result
+        return await redis.get(key)

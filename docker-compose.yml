@@ -2,14 +2,14 @@
 version: '3.8'
 
 services:
-  app:
-    build: .
-    container_name: promo-bot
-    depends_on:
-      - redis
-    environment:
-      - REDIS_HOST=redis
-    command: python app/main.py
+  # app:
+  #   build: .
+  #   container_name: promo-bot
+  #   depends_on:
+  #     - redis
+  #   environment:
+  #     - REDIS_HOST=redis
+  #   command: python app/main.py
 
   redis:
     image: redis:7

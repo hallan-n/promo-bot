@@ -1,13 +1,14 @@
 import asyncio
-import json
 import re
 from playwright.async_api import async_playwright
-from domain import BaseProcessor
+from domain import BaseProcessor, BaseWebDriver
+from logging import info
 
 
-class AmazonBronze(BaseProcessor):
-    _dict_product_raw = {}
-
+class AmazonBronze(BaseWebDriver, BaseProcessor):
+    def __init__(self):
+        self.products_raw = ''
+    
     async def handle_target_response(self, response):
         if response.url.startswith(
             "https://www.amazon.com/-/pt/gp/goldbox?ref_=nav_cs_gb"
@@ -19,12 +20,7 @@ class AmazonBronze(BaseProcessor):
                 pattern = r"assets\.mountWidget.*"
                 match = re.search(pattern, text)
                 if match:
-                    self.dict_product_raw = (
-                        json.loads(f"[{match.group()[30:-1]}]")[0]
-                        .get("prefetchedData")
-                        .get("entity")
-                        .get("rankedPromotions")
-                    )
+                    self.products_raw = f"[{match.group()[30:-1]}]"
 
     async def exec(self):
         async with async_playwright() as p:
@@ -48,5 +44,5 @@ class AmazonBronze(BaseProcessor):
             )
 
             await page.goto("https://www.amazon.com/-/pt/gp/goldbox?ref_=nav_cs_gb")
-
-            return self._dict_product_raw
+            info('Produtos Amazon capturados no site')
+            return self.products_raw
