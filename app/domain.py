@@ -5,13 +5,11 @@ from playwright.async_api import Browser, Page
 from models import Session
 
 
-
-class BaseProcessor(ABC):
+class BaseWebDriver(ABC):
     @abstractmethod
     async def exec(self):
         ...
 
-class BaseWebDriver:
     async def get_stealth_page(self, browser: Browser) -> Page:
         config = {
             "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -60,6 +58,20 @@ class BaseWebDriver:
         )
         return page
 
+    async def get_session(self, page: Page) -> Session:
+        state = await page.context.storage_state()
+        cookies = await page.context.cookies()
+        local_storage = await page.evaluate("() => JSON.stringify(window.localStorage)")
+        session_storage = await page.evaluate(
+            "() => JSON.stringify(window.sessionStorage)"
+        )
+        return Session(
+            state=state,
+            cookies=cookies,
+            local_storage=json.loads(local_storage),
+            session_storage=json.loads(session_storage)
+        )
+    
 
     async def inject_session(self, page: Page, session: Session):
         await page.add_init_script(

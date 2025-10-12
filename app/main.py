@@ -1,5 +1,9 @@
 import asyncio
-from silver.mercadolivre import MercadolivreSilver
+from stores.amazon import Amazon
+from stores.mercadolivre import Mercadolivre
 
 if __name__ == "__main__":
-    mercadolivre = asyncio.run(MercadolivreSilver().exec())
+    asyncio.run(Mercadolivre().exec())
+    # print(mercadolivre)
+    # amazon = asyncio.run(Amazon().exec())
+    # print(amazon)

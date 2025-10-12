@@ -15,10 +15,10 @@ class Base:
 @dataclass
 class Product(Base):
     name: str
-    description: str
     original_price: float
     price_discount: float
     payment_condition: str
+    discount: str
     url: str
     thumbnail: str
     fetched_at: str = datetime.now().isoformat()
@@ -29,4 +29,3 @@ class Session(Base):
     cookies: dict
     local_storage: dict
     session_storage: dict
-    login_at: str
