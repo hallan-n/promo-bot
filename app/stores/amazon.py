@@ -1,67 +1,73 @@
-import json
-from logging import info
-from cache import get, add
-import asyncio
-import re
+import os
 from playwright.async_api import async_playwright
-from domain import BaseWebDriver
-from logging import info
+from playwright_stealth import Stealth
+from stores.base import WebDriver
+from models import Product
+from consts import SESSION_PATH
 
-class Amazon(BaseWebDriver):
-    def __init__(self):
-        self.products_raw = ''
 
-    async def _handle_target_response(self, response):
-        if response.url.startswith(
-            "https://www.amazon.com/-/pt/gp/goldbox?ref_=nav_cs_gb"
-        ):
-            content_type = response.headers.get("content-type", "")
-            if content_type.strip().lower().replace(" ", "") == "text/html;charset=utf-8":
-                text = await response.text()
+class Amazon(WebDriver):
+    name = "amazon"
+    session_path = f"{SESSION_PATH}/{name}.json"
 
-                pattern = r"assets\.mountWidget.*"
-                match = re.search(pattern, text)
-                if match:
-                    self.products_raw = f"[{match.group()[30:-1]}]"
-    
-    async def _extract_products(self):
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=False,
-                args=[
-                    "--disable-blink-features=AutomationControlled",
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--ignore-certificate-errors",
-                ],
+    async def amazon_save_session(self):
+        async with Stealth(navigator_languages_override=("pt-BR")).use_async(
+            async_playwright()
+        ) as p:
+            browser = await p.chromium.launch(headless=False)
+            page = await browser.new_page()
+            await page.goto("https://www.amazon.com.br/")
+            input("Click em qualquer tecla ao finalizar o login.")
+            session = await self.get_session(page)
+
+            with open(self.session_path, "w") as doc:
+                doc.write(session.json())
+
+    async def amazon_save_deals(self):
+        async with Stealth(navigator_languages_override=("pt-BR")).use_async(
+            async_playwright()
+        ) as p:
+            browser = await p.chromium.launch(headless=False)
+            page = await browser.new_page()
+            await self.inject_session(page, self.session_path)
+
+
+            response = await page.request.get(
+                'https://www.amazon.com.br/d2b/api/v1/products/search?pageSize=30&startIndex=0&calculateRefinements=false&rankingContext={"pageTypeId":"deals","rankGroup":"DEFAULT"}'
             )
+            if response.ok:
+                data = await response.json()
 
-            page = await self.get_stealth_page(browser)
+            products = []
+            for product in data['products']:
+                thumbnail = product.get("image", {}).get("hiRes")
+                price = product.get('price', {})
+                
+                response = await page.request.get(
+                    f"https://www.amazon.com.br/associates/sitestripe/getShortUrl?longUrl=https://www.amazon.com.br{product.get('link', {})}"
+                )
 
-            page.on(
-                "response",
-                lambda response: asyncio.create_task(
-                    self._handle_target_response(response)
-                ),
-            )
+                if response.ok:
+                    data = await response.json()
+                    
+                url = data.get("shortUrl")
 
-            await page.goto("https://www.amazon.com/-/pt/gp/goldbox?ref_=nav_cs_gb")
-            info('Produtos Amazon capturados no site')
-            return self.products_raw
+                products.append(
+                    Product(
+                        name=product.get('title'),
+                        original_price=float(price.get("basisPrice", {}).get("price", 0.0)),
+                        price_discount=float(price.get("priceToPay", {}).get("price", 0.0)),
+                        url=url or f"https://www.amazon.com.br{product.get('link', {})}",
+                        thumbnail=f"{thumbnail.get("baseUrl")}.{thumbnail.get("extension")}",
+                        discount=product.get("dealBadge", {}).get("label", {}).get("content", {}).get("fragments", [{}])[0].get("text", "")
+                    ).dict()
+                )
+            
+            return products
         
+
     async def exec(self):
+        if not os.path.exists("app/sessions/amazon.json"):
+            await self.amazon_save_session()
 
-        values_raw = await get('amazon')
-        if not values_raw:
-            values_raw = await self._extract_products()
-            await add('amazon', values_raw, 86400)
-    
-        
-        # items = json.loads(values_raw).get("data").get("items", [])
-
-        # products = []
-        # for item in items:
-        #     products.append(self._extract_product(item))
-        # return products
-
-
+        return await self.amazon_save_deals()
