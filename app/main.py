@@ -1,5 +1,5 @@
 import asyncio
-from stores.amazon import Amazon
+from amazon import Amazon
 
 
 

@@ -1,7 +1,7 @@
 import os
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
-from stores.base import WebDriver
+from base import WebDriver
 from models import Product
 from consts import SESSION_PATH
 
