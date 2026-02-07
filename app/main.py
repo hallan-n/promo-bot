@@ -1,9 +1,6 @@
 import asyncio
+
 from amazon import Amazon
+from whatsapp import Whatsapp
 
-
-
-asd = asyncio.run(Amazon().exec())
-import json
-print(json.dumps(asd, indent=4))
-
+asyncio.run(Whatsapp().exec())

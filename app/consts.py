@@ -1,1 +1,1 @@
-SESSION_PATH="app/sessions"
+SESSION_PATH = "app/sessions"

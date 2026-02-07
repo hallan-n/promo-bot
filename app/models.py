@@ -1,7 +1,7 @@
-
 import json
 from dataclasses import asdict, dataclass
 from datetime import datetime
+
 
 @dataclass
 class Base:
@@ -21,10 +21,3 @@ class Product(Base):
     url: str
     thumbnail: str
     fetched_at: str = datetime.now().isoformat()
-
-@dataclass
-class Session(Base):
-    state: dict
-    cookies: dict
-    local_storage: dict
-    session_storage: dict
