@@ -12,7 +12,11 @@ class Amazon:
                 user_data_dir="./profile", channel="chrome", headless=False
             )
 
-            page = await context.new_page()
+            page = context.pages[0]
+
+            await page.goto("https://www.amazon.com.br")
+
+            await page.wait_for_timeout(2000)
 
             response = await page.request.get(
                 'https://www.amazon.com.br/d2b/api/v1/products/search?pageSize=30&startIndex=0&calculateRefinements=false&rankingContext={"pageTypeId":"deals","rankGroup":"DEFAULT"}'
@@ -43,8 +47,7 @@ class Amazon:
                         price_discount=float(
                             price.get("priceToPay", {}).get("price", 0.0)
                         ),
-                        url=url
-                        or f"https://www.amazon.com.br{product.get('link', {})}",
+                        url=url,
                         thumbnail=f"{thumbnail.get("baseUrl")}.{thumbnail.get("extension")}",
                         discount=product.get("dealBadge", {})
                         .get("label", {})
