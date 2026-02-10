@@ -1,4 +1,4 @@
-from app.webdriver.browser import BrowserManager
+from webdriver.browser import BrowserManager
 from models import Product
 
 

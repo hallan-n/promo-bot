@@ -2,10 +2,10 @@ import asyncio
 import json
 import re
 
-from app.webdriver.browser import BrowserManager
+from webdriver.browser import BrowserManager
 from models import Product
 from playwright.async_api import Page
-from stores.base import Base
+from webdriver.base import Base
 
 
 class Amazon(Base):

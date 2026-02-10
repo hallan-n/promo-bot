@@ -2,7 +2,7 @@ import asyncio
 
 from services.cache import RedisCache
 from category import AmazonDepartament
-from config import REDIS_CONN, WORK_SECONDS
+from consts import REDIS_CONN, WORK_SECONDS
 from webdriver.amazon import Amazon
 from webdriver.base import Base
 
@@ -20,6 +20,14 @@ async def ingestion(stores: list[Base]):
     await asyncio.Event().wait()
 
 
-casa = Amazon(AmazonDepartament.LIVROS.value, AmazonDepartament.LIVROS.name, 10, 0)
+groups = [
+    {
+        "name": "LOBÃO CASA 1",
+        "products": [
+            Amazon(AmazonDepartament.CASA.value, AmazonDepartament.CASA.name, 30, 0),
+            Amazon(AmazonDepartament.ELETRODOMESTICOS.value, AmazonDepartament.ELETRODOMESTICOS.name, 30, 0),
+            Amazon(AmazonDepartament.COZINHA.value, AmazonDepartament.COZINHA.name, 30, 0)
+        ]
+    }
+]
 
-asyncio.run(ingestion([casa]))
