@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class AmazonCategory(Enum):
     TUDO = "all"
     ALIMENTOS_E_BEBIDAS = "18991080011"

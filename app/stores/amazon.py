@@ -4,15 +4,20 @@ import re
 
 from browser import BrowserManager
 from models import Product
+from stores.base import Base
 
 
-class Amazon:
-    def __init__(self, departament: str | list, product_limit: int):
+class Amazon(Base):
+    def name(self):
+        return "amazon"
+
+    def __init__(self, departament: str | list, product_limit: int, min_discount: int):
         if isinstance(departament, list):
             self.departament = "/".join(departament)
         else:
             self.departament = departament
         self.product_limit = product_limit
+        self.min_discount = min_discount
 
     async def process_product(self, product, page, sem):
         async with sem:
@@ -98,6 +103,9 @@ class Amazon:
             ),
             "refinementFilters": compact(
                 [{"id": "departments", "value": [self.departament]}]
+            ),
+            "rangeRefinementFilters": compact(
+                [{"id": "percentOff", "min": self.min_discount, "max": 70}]
             ),
             "pinningConfiguration": compact({"pinnedPromotionsLayoutGroup": "default"}),
         }
