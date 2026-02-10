@@ -2,8 +2,9 @@ import asyncio
 import json
 import re
 
-from browser import BrowserManager
+from app.webdriver.browser import BrowserManager
 from models import Product
+from playwright.async_api import Page
 from stores.base import Base
 
 
@@ -11,15 +12,19 @@ class Amazon(Base):
     def name(self):
         return "amazon"
 
-    def __init__(self, departament: str | list, product_limit: int, min_discount: int):
-        if isinstance(departament, list):
-            self.departament = "/".join(departament)
-        else:
-            self.departament = departament
+    def __init__(
+        self,
+        departament_code: str,
+        departament_name: str,
+        product_limit: int,
+        min_discount: int,
+    ):
+        self.departament_code = departament_code
+        self.departament_name = departament_name
         self.product_limit = product_limit
         self.min_discount = min_discount
 
-    async def process_product(self, product, page, sem):
+    async def process_product(self, product: dict, page: Page, sem: asyncio.Semaphore):
         async with sem:
             thumbnail = product.get("image", {}).get("hiRes")
             price = product.get("price", {})
@@ -102,7 +107,7 @@ class Amazon(Base):
                 }
             ),
             "refinementFilters": compact(
-                [{"id": "departments", "value": [self.departament]}]
+                [{"id": "departments", "value": [self.departament_code]}]
             ),
             "rangeRefinementFilters": compact(
                 [{"id": "percentOff", "min": self.min_discount, "max": 70}]

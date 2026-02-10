@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class AmazonCategory(Enum):
+class AmazonDepartament(Enum):
     TUDO = "all"
     ALIMENTOS_E_BEBIDAS = "18991080011"
     AUTOMOTIVO = "18914210011"
