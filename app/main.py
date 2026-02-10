@@ -1,25 +1,24 @@
 import asyncio
+
+from amazon import Amazon
+from category import AmazonCategory
+
 from models import Product
 from whatsapp import Whatsapp
 
-async def main():
-    zap = Whatsapp()
 
-    await zap.start()
-    await asyncio.sleep(1)
+async def ingestion():
 
-    await zap.send_message(
-        "Alan",
-        Product(
-            name="bosta",
-            original_price=100,
-            price_discount=300,
-            discount="30%",
-            url="https://producoto.com",
-            thumbnail="https://wallpapers.com/images/featured/imagens-incriveis-k287z98ruunquo28.jpg")
-    )
+    beleza = Amazon(AmazonCategory.BELEZA.value, 10)
+    casa = Amazon(AmazonCategory.CASA.value, 10)
+    games = Amazon(AmazonCategory.GAMES_E_CONSOLES.value, 10)
+
+    products_beleza = await beleza.exec()
+    products_casa = await casa.exec()
+    products_games = await games.exec()
+    
 
     await asyncio.Event().wait()
 
 
-asyncio.run(main())
+asyncio.run(ingestion())

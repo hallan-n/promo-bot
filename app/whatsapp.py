@@ -61,7 +61,6 @@
 # https://mercadolivre.com/sec/1juisjF""")
 
 
-            
 #             await page.wait_for_timeout(1000)
 
 #             await page.keyboard.press("Enter")
@@ -71,45 +70,38 @@
 #             breakpoint()
 
 
+from browser import BrowserManager
+from models import Product
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
-from models import Product
-
 
 class Whatsapp:
-
     def __init__(self):
         self.playwright = None
         self.context = None
         self.page = None
 
     async def start(self):
-        self._stealth_cm = Stealth(navigator_languages_override=("pt-BR")).use_async(async_playwright())
-        self.playwright = await self._stealth_cm.__aenter__()
-        self.context = await self.playwright.chromium.launch_persistent_context(
-            user_data_dir="./profile",
-            channel="chrome",
-            headless=False
-        )
-
-        self.page = self.context.pages[0]
-
+        browser = await BrowserManager.get_instance()
+        self.page = await browser.new_page()
         await self.page.goto("https://web.whatsapp.com/")
-
         await self.page.wait_for_selector(
             'div:has-text("Protegida com a criptografia de ponta a ponta")',
-            state="detached"
+            state="detached",
         )
-
 
     async def send_message(self, group_name, product: Product):
 
-        message_list = await self.page.query_selector('div[aria-label="Lista de conversas"]')
+        message_list = await self.page.query_selector(
+            'div[aria-label="Lista de conversas"]'
+        )
 
         await self.page.wait_for_timeout(1000)
 
-        chat = await message_list.query_selector(f'div[role="row"]:has(span:text("{group_name}"))')
+        chat = await message_list.query_selector(
+            f'div[role="row"]:has(span:text("{group_name}"))'
+        )
 
         await self.page.wait_for_timeout(1000)
 
@@ -122,7 +114,6 @@ class Whatsapp:
         with open("./product.jpg", "wb") as f:
             f.write(content)
 
-
         await self.page.click('button[aria-label="Anexar"]')
 
         await self.page.wait_for_timeout(1000)
@@ -133,8 +124,9 @@ class Whatsapp:
         file_chooser = await fc.value
         await file_chooser.set_files("./product.jpg")
 
-        
-        box = self.page.locator('div[contenteditable="true"][aria-placeholder="Digite uma mensagem"]').first
+        box = self.page.locator(
+            'div[contenteditable="true"][aria-placeholder="Digite uma mensagem"]'
+        ).first
 
         await self.page.wait_for_timeout(1000)
 
@@ -142,23 +134,18 @@ class Whatsapp:
 
         await self.page.wait_for_timeout(1000)
 
-        await box.fill(
-"""🧜🏻‍♀️ Notebook Gamer Acer Nitro V15 Core I5 512gb 8gb Linux+ubook
+        await box.fill(f"""🧜🏻‍♀️ {product.name}
 
-~de R$ 4.699~
-por R$ 3.819,00 😱😱
+~de R$ {product.original_price}~
+por * R$ {product.price_discount} 😱😱 *
 
-💳 ou 10x de R$ 381,90
-🎟️ Aplique o cupom de R$300 OFF abaixo do preço
+🎟️ {product.discount}
 
-https://mercadolivre.com/sec/1juisjF""")
+{product.url}""")
 
-
-        
         await self.page.wait_for_timeout(1000)
 
         await self.page.keyboard.press("Enter")
-
 
     async def close(self):
         await self.context.close()

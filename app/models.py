@@ -17,6 +17,8 @@ class Product(Base):
     name: str
     original_price: float
     price_discount: float
+    payment_condition: str
+    cupom: str
     discount: str
     url: str
     thumbnail: str

@@ -1,60 +1,123 @@
+import asyncio
+import json
+import re
+
+from browser import BrowserManager
 from models import Product
-from playwright.async_api import async_playwright
-from playwright_stealth import Stealth
 
 
 class Amazon:
-    async def exec(self):
-        async with Stealth(navigator_languages_override=("pt-BR")).use_async(
-            async_playwright()
-        ) as p:
-            context = await p.chromium.launch_persistent_context(
-                user_data_dir="./profile", channel="chrome", headless=False
-            )
+    def __init__(self, departament: str | list, product_limit: int):
+        if isinstance(departament, list):
+            self.departament = "/".join(departament)
+        else:
+            self.departament = departament
+        self.product_limit = product_limit
 
-            page = context.pages[0]
+    async def process_product(self, product, page, sem):
+        async with sem:
+            thumbnail = product.get("image", {}).get("hiRes")
+            price = product.get("price", {})
+            link = product.get("link")
 
-            await page.goto("https://www.amazon.com.br")
+            payment_condition = None
+            cupom = None
+            short_url = None
 
-            await page.wait_for_timeout(2000)
-
-            response = await page.request.get(
-                'https://www.amazon.com.br/d2b/api/v1/products/search?pageSize=30&startIndex=0&calculateRefinements=false&rankingContext={"pageTypeId":"deals","rankGroup":"DEFAULT"}'
-            )
-            if response.ok:
-                data = await response.json()
-
-            products = []
-            for product in data["products"]:
-                thumbnail = product.get("image", {}).get("hiRes")
-                price = product.get("price", {})
-
-                response = await page.request.get(
-                    f"https://www.amazon.com.br/associates/sitestripe/getShortUrl?longUrl=https://www.amazon.com.br{product.get('link', {})}"
+            try:
+                pdp_response = await page.request.get(
+                    f"https://www.amazon.com.br{link}"
                 )
 
-                if response.ok:
-                    data = await response.json()
+                if pdp_response.ok:
+                    html = await pdp_response.text()
 
-                url = data.get("shortUrl")
+                    match = re.search(r"Em até .*? sem juros", html)
+                    if match:
+                        payment_condition = match.group(0)
 
-                products.append(
-                    Product(
-                        name=product.get("title"),
-                        original_price=float(
-                            price.get("basisPrice", {}).get("price", 0.0)
-                        ),
-                        price_discount=float(
-                            price.get("priceToPay", {}).get("price", 0.0)
-                        ),
-                        url=url,
-                        thumbnail=f"{thumbnail.get("baseUrl")}.{thumbnail.get("extension")}",
-                        discount=product.get("dealBadge", {})
-                        .get("label", {})
-                        .get("content", {})
-                        .get("fragments", [{}])[0]
-                        .get("text", ""),
-                    ).dict()
+                    match = re.search(r"(com o cupom )(\w+).*?", html)
+                    if match:
+                        cupom = match.group(2)
+
+                short_response = await page.request.get(
+                    f"https://www.amazon.com.br/associates/sitestripe/getShortUrl?longUrl=https://www.amazon.com.br{link}"
                 )
 
-            return products
+                short_data = await short_response.json() if short_response.ok else {}
+
+                short_url = short_data.get("shortUrl")
+
+            except Exception:
+                pass
+
+            return Product(
+                name=product.get("title"),
+                original_price=float(price.get("basisPrice", {}).get("price", 0.0)),
+                price_discount=float(price.get("priceToPay", {}).get("price", 0.0)),
+                url=short_url,
+                payment_condition=payment_condition,
+                cupom=cupom,
+                thumbnail=(
+                    f"{thumbnail.get('baseUrl')}.{thumbnail.get('extension')}"
+                    if thumbnail
+                    else None
+                ),
+                discount=product.get("dealBadge", {})
+                .get("label", {})
+                .get("content", {})
+                .get("fragments", [{}])[0]
+                .get("text", ""),
+            )
+
+    async def exec(self) -> list[Product]:
+        browser = await BrowserManager.get_instance()
+        page = await browser.new_page()
+
+        await page.goto("https://www.amazon.com.br")
+
+        def compact(obj):
+            return json.dumps(obj, separators=(",", ":"))
+
+        params = {
+            "pageSize": str(self.product_limit),
+            "startIndex": "0",
+            "calculateRefinements": "false",
+            "rankingContext": compact({"pageTypeId": "deals", "rankGroup": "DEFAULT"}),
+            "filters": compact(
+                {
+                    "includedDepartments": [],
+                    "excludedDepartments": [],
+                    "includedTags": [],
+                    "excludedTags": ["EINKBF25"],
+                    "promotionTypes": [],
+                    "accessTypes": [],
+                    "brandIds": [],
+                    "unifiedIds": [],
+                }
+            ),
+            "refinementFilters": compact(
+                [{"id": "departments", "value": [self.departament]}]
+            ),
+            "pinningConfiguration": compact({"pinnedPromotionsLayoutGroup": "default"}),
+        }
+
+        response = await page.request.get(
+            "https://www.amazon.com.br/d2b/api/v1/products/search", params=params
+        )
+
+        if not response.ok:
+            await page.close()
+            return []
+
+        data = await response.json()
+
+        sem = asyncio.Semaphore(int(self.product_limit / 5))
+
+        tasks = [self.process_product(p, page, sem) for p in data["products"]]
+
+        products = await asyncio.gather(*tasks)
+
+        await page.close()
+
+        return products
