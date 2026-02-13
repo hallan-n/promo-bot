@@ -1,6 +1,4 @@
 from playwright.async_api import async_playwright
-from playwright_stealth import Stealth
-
 
 class BrowserManager:
     _instance = None
@@ -17,11 +15,7 @@ class BrowserManager:
         return cls._instance
 
     async def _start(self):
-        self._stealth_cm = Stealth(navigator_languages_override=("pt-BR",)).use_async(
-            async_playwright()
-        )
-
-        self.playwright = await self._stealth_cm.__aenter__()
+        self.playwright = await async_playwright().start()
 
         self.context = await self.playwright.chromium.launch_persistent_context(
             user_data_dir="./profile", channel="chrome", headless=False

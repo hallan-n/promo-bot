@@ -6,23 +6,22 @@ from webdriver.browser import BrowserManager
 from models import Product
 from playwright.async_api import Page
 from webdriver.base import Base
+from departaments import AMAZON_DEPARTAMENTS
 
 
 class Amazon(Base):
     def name(self):
         return "amazon"
 
-    def __init__(
-        self,
-        departament_code: str,
-        departament_name: str,
-        product_limit: int,
-        min_discount: int,
-    ):
-        self.departament_code = departament_code
-        self.departament_name = departament_name
+    def __init__(self, departament: str, product_limit: int, min_discount: int, sub_departament: str = None):
         self.product_limit = product_limit
         self.min_discount = min_discount
+
+        if sub_departament:
+            self.departament_code = f"{AMAZON_DEPARTAMENTS[departament]['code']}/{AMAZON_DEPARTAMENTS[departament]['subs'][sub_departament]}"
+        else:
+            self.departament_code = AMAZON_DEPARTAMENTS[departament]['code']
+
 
     async def process_product(self, product: dict, page: Page, sem: asyncio.Semaphore):
         async with sem:

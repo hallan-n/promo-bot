@@ -16,6 +16,29 @@ class Whatsapp:
             'div:has-text("Protegida com a criptografia de ponta a ponta")',
             state="detached",
         )
+    def format_brl(self, value: float) -> str:
+        return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    def get_template_message(self, product: Product) -> str:
+        lines = [
+            f"🦊 {product.name}\n",
+            f"~de R$ {self.format_brl(product.original_price)}~",
+            f"*por R$ {self.format_brl(product.price_discount)} 😱😱*\n"]
+
+        if product.payment_condition:
+            lines.append(f"💳 {product.payment_condition}")
+
+        if product.cupom:
+            lines.append(f"🎟️ Use o cupom: {product.cupom}")
+
+        if product.payment_condition or product.cupom:
+            lines.append("")
+
+        if product.url:
+            lines.append(product.url)
+
+        return "\n".join(lines)
+
 
     async def send_message(self, group_name, product: Product):
 
@@ -60,14 +83,7 @@ class Whatsapp:
 
         await self.page.wait_for_timeout(1000)
 
-        await box.fill(f"""🧜🏻‍♀️ {product.name}
-
-~de R$ {product.original_price}~
-por * R$ {product.price_discount} 😱😱 *
-
-🎟️ {product.discount}
-
-{product.url}""")
+        await box.fill(self.get_template_message(product))
 
         await self.page.wait_for_timeout(1000)
 
