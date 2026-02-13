@@ -1,8 +1,7 @@
 import json
 
-from redis.asyncio import Redis
-
 from models import Product
+from redis.asyncio import Redis
 
 
 class RedisCache:
@@ -41,9 +40,10 @@ class RedisCache:
                 products.append(data)
 
         return products
-    
 
-    async def get_products_by_group_name_id_with_keys(self, name_id: str) -> list[Product]:
+    async def get_products_by_group_name_id_with_keys(
+        self, name_id: str
+    ) -> list[Product]:
         prefix = f"{name_id}:"
         keys = await self.redis.keys(f"{prefix}*")
         products = []
