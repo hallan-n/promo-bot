@@ -39,5 +39,5 @@ groups = [
             Amazon("Computadores e Informática", 50, 15),
             Amazon("Eletrônicos e Tecnologia", 20, 15)
         ],
-    }
+    },
 ]

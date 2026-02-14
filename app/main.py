@@ -3,9 +3,9 @@ from datetime import datetime
 
 from groups import groups
 from services.cache import RedisCache
+from services.logger import logger
 from webdriver.base import Base
 from webdriver.whatsapp import Whatsapp
-from services.logger import logger
 
 MESSAGE_DELAY = 180
 REDIS_CONN = "redis://localhost:6379"
@@ -45,18 +45,16 @@ async def ingestion():
     ingestion_sem = asyncio.Semaphore(4)
 
     tasks = [
-        _ingestion(group["name_id"], group["stores"], ingestion_sem)
-        for group in groups
+        _ingestion(group["name_id"], group["stores"], ingestion_sem) for group in groups
     ]
 
     await asyncio.gather(*tasks)
 
     logger.info("✅ Ingestão finalizada")
 
-
-# ⭐ NOVO MODELO — Round Robin por grupos
 async def send_products_round_robin(wpp: Whatsapp):
     sem = asyncio.Semaphore(1)
+    empty_groups_logged = set()  # evita spam de log
 
     while True:
         if not in_working_hours():
@@ -72,28 +70,29 @@ async def send_products_round_robin(wpp: Whatsapp):
             items = await redis.get_products_by_group_name_id_with_keys(name_id)
 
             if not items:
+                if name_id not in empty_groups_logged:
+                    logger.info(f"📭 Produtos do grupo {group_name} acabaram")
+                    empty_groups_logged.add(name_id)
                 continue
 
-            key, product = items[0]  # pega 1 produto por grupo
+            # remove do controle se voltou a ter produtos
+            empty_groups_logged.discard(name_id)
 
-            if not in_working_hours():
-                logger.info("🛑 Expediente encerrado durante envio")
-                return
+            key, product = items[0]
 
             async with sem:
                 await wpp.send_message(group_name, product)
                 await redis.delete(key)
 
                 logger.info(f"✅ Enviado para {group_name}")
-
                 sent_any = True
 
-        # se enviou pelo menos algo, espera delay global
         if sent_any:
             logger.info(f"⏳ Aguardando {MESSAGE_DELAY}s para próxima rodada")
             await asyncio.sleep(MESSAGE_DELAY)
         else:
             await asyncio.sleep(CHECK_INTERVAL)
+
 
 
 async def main():
@@ -102,7 +101,7 @@ async def main():
     logger.info("🚀 Iniciando WhatsApp...")
     wpp = Whatsapp()
     await wpp.start()
-    
+
     await redis.clear()
     await ingestion()
 
