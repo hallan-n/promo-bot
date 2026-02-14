@@ -5,8 +5,9 @@ from groups import groups
 from services.cache import RedisCache
 from webdriver.base import Base
 from webdriver.whatsapp import Whatsapp
+from services.logger import logger
 
-MESSAGE_DELAY = 60
+MESSAGE_DELAY = 180
 REDIS_CONN = "redis://localhost:6379"
 START_HOUR = 11
 END_HOUR = 18
@@ -22,7 +23,7 @@ def in_working_hours():
 
 async def wait_until_working_hours():
     while not in_working_hours():
-        print("⏳ Aguardando início do expediente...")
+        logger.info("⏳ Aguardando início do expediente...")
         await asyncio.sleep(60)
 
 
@@ -31,72 +32,85 @@ async def _ingestion(group_name_id: str, stores: list[Base], sem: asyncio.Semaph
         async with sem:
             products = await store.exec()
             for index, product in enumerate(products):
+                if not product.original_price or not product.price_discount:
+                    continue
                 key = f"{group_name_id}:{store.departament_code}:{index}"
-                await redis.add(key, product)
+                await redis.add(key, product, 86400)
 
     await asyncio.gather(*(process_store(store) for store in stores))
 
 
 async def ingestion():
-    print("📥 Iniciando ingestão...")
-    await redis.clear()
-
+    logger.info("📥 Iniciando ingestão...")
     ingestion_sem = asyncio.Semaphore(4)
 
     tasks = [
-        _ingestion(group["name_id"], group["stores"], ingestion_sem) for group in groups
+        _ingestion(group["name_id"], group["stores"], ingestion_sem)
+        for group in groups
     ]
 
     await asyncio.gather(*tasks)
-    print("✅ Ingestão finalizada")
+
+    logger.info("✅ Ingestão finalizada")
 
 
-async def send_products_group(
-    wpp: Whatsapp, group_name: str, name_id: str, sem: asyncio.Semaphore
-):
+# ⭐ NOVO MODELO — Round Robin por grupos
+async def send_products_round_robin(wpp: Whatsapp):
+    sem = asyncio.Semaphore(1)
+
     while True:
         if not in_working_hours():
-            print(f"🛑 Expediente encerrado para grupo {group_name}")
+            logger.info("🛑 Expediente encerrado")
             return
 
-        items = await redis.get_products_by_group_name_id_with_keys(name_id)
+        sent_any = False
 
-        if not items:
-            await asyncio.sleep(CHECK_INTERVAL)
-            continue
+        for group in groups:
+            group_name = group["name"]
+            name_id = group["name_id"]
 
-        for key, product in items:
+            items = await redis.get_products_by_group_name_id_with_keys(name_id)
+
+            if not items:
+                continue
+
+            key, product = items[0]  # pega 1 produto por grupo
+
             if not in_working_hours():
-                print(f"🛑 Expediente encerrado durante envio ({group_name})")
+                logger.info("🛑 Expediente encerrado durante envio")
                 return
 
             async with sem:
                 await wpp.send_message(group_name, product)
                 await redis.delete(key)
-                await asyncio.sleep(MESSAGE_DELAY)
+
+                logger.info(f"✅ Enviado para {group_name}")
+
+                sent_any = True
+
+        # se enviou pelo menos algo, espera delay global
+        if sent_any:
+            logger.info(f"⏳ Aguardando {MESSAGE_DELAY}s para próxima rodada")
+            await asyncio.sleep(MESSAGE_DELAY)
+        else:
+            await asyncio.sleep(CHECK_INTERVAL)
 
 
 async def main():
     await wait_until_working_hours()
 
-    print("🚀 Iniciando WhatsApp...")
+    logger.info("🚀 Iniciando WhatsApp...")
     wpp = Whatsapp()
     await wpp.start()
-
+    
+    await redis.clear()
     await ingestion()
 
-    print("📤 Iniciando worker de envio...")
+    logger.info("📤 Iniciando worker de envio...")
 
-    sem = asyncio.Semaphore(1)
+    await send_products_round_robin(wpp)
 
-    send_tasks = [
-        send_products_group(wpp, group["name"], group["name_id"], sem)
-        for group in groups
-    ]
-
-    await asyncio.gather(*send_tasks)
-
-    print("🏁 Expediente finalizado")
+    logger.info("🏁 Expediente finalizado")
 
 
 if __name__ == "__main__":

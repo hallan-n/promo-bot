@@ -66,7 +66,7 @@ class Amazon(Base):
                 name=product.get("title"),
                 original_price=float(price.get("basisPrice", {}).get("price", 0.0)),
                 price_discount=float(price.get("priceToPay", {}).get("price", 0.0)),
-                url=short_url,
+                url=short_url if short_url else f"https://www.amazon.com.br{link}",
                 payment_condition=payment_condition,
                 cupom=cupom,
                 thumbnail=(
