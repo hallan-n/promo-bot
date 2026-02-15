@@ -24,11 +24,11 @@ groups = [
         "name_id": "RAPOSA_BELEZA_1",
         "stores": [
             Amazon("Beleza", 30, 10, "Cuidados com o Cabelo"),
-            Amazon("Beleza", 30, 10, "Manicure e Pedicure"),
-            Amazon("Beleza", 30, 10, "Maquiagem"),
             Amazon("Beleza", 30, 10, "Pele"),
-            Amazon("Beleza", 30, 10, "Perfumes"),
-            Amazon("Beleza", 30, 10, "Utensílios e Acessórios"),
+            Amazon("Beleza", 15, 10, "Perfumes"),
+            Amazon("Beleza", 15, 10, "Maquiagem"),
+            Amazon("Beleza", 5, 10, "Manicure e Pedicure"),
+            Amazon("Beleza", 5, 10, "Utensílios e Acessórios"),
         ],
     },
     {
@@ -37,7 +37,7 @@ groups = [
         "stores": [
             Amazon("Games e Consoles", 40, 15),
             Amazon("Computadores e Informática", 50, 15),
-            Amazon("Eletrônicos e Tecnologia", 20, 15)
+            Amazon("Eletrônicos e Tecnologia", 20, 15),
         ],
     },
 ]

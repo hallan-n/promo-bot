@@ -4,7 +4,6 @@ from datetime import datetime
 from groups import groups
 from services.cache import RedisCache
 from services.logger import logger
-from webdriver.base import Base
 from webdriver.whatsapp import Whatsapp
 
 MESSAGE_DELAY = 180
@@ -22,35 +21,10 @@ def in_working_hours():
 
 
 async def wait_until_working_hours():
-    while not in_working_hours():
+    while not in_working_hours:
         logger.info("⏳ Aguardando início do expediente...")
         await asyncio.sleep(60)
 
-
-async def _ingestion(group_name_id: str, stores: list[Base], sem: asyncio.Semaphore):
-    async def process_store(store: Base):
-        async with sem:
-            products = await store.exec()
-            for index, product in enumerate(products):
-                if not product.original_price or not product.price_discount:
-                    continue
-                key = f"{group_name_id}:{store.departament_code}:{index}"
-                await redis.add(key, product, 86400)
-
-    await asyncio.gather(*(process_store(store) for store in stores))
-
-
-async def ingestion():
-    logger.info("📥 Iniciando ingestão...")
-    ingestion_sem = asyncio.Semaphore(4)
-
-    tasks = [
-        _ingestion(group["name_id"], group["stores"], ingestion_sem) for group in groups
-    ]
-
-    await asyncio.gather(*tasks)
-
-    logger.info("✅ Ingestão finalizada")
 
 async def send_products_round_robin(wpp: Whatsapp):
     sem = asyncio.Semaphore(1)
@@ -93,6 +67,22 @@ async def send_products_round_robin(wpp: Whatsapp):
         else:
             await asyncio.sleep(CHECK_INTERVAL)
 
+
+async def ingestion():
+    logger.info("📥 Iniciando ingestão...")
+    await redis.clear()
+
+    for i, group in enumerate(groups):
+        for j, store in enumerate(group.get("stores")):
+            products = await store.exec()
+            logger.info(
+                f"Processado {len(products)} produtos para Store {group['name']}"
+            )
+            for k, product in enumerate(products):
+                key = f"{group['name_id']}:{i}-{j}-{k}"
+                await redis.add(key, product, 86400)
+
+    logger.info("✅ Ingestão finalizada")
 
 
 async def main():

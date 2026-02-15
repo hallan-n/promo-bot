@@ -19,67 +19,56 @@ class Amazon(Base):
     ):
         self.product_limit = product_limit
         self.min_discount = min_discount
-
         if sub_departament:
             self.departament_code = f"{AMAZON_DEPARTAMENTS[departament]['code']}/{AMAZON_DEPARTAMENTS[departament]['subs'][sub_departament]}"
         else:
             self.departament_code = AMAZON_DEPARTAMENTS[departament]["code"]
 
-    async def process_product(self, product: dict, page: Page, sem: asyncio.Semaphore):
-        async with sem:
-            thumbnail = product.get("image", {}).get("hiRes")
-            price = product.get("price", {})
-            link = product.get("link")
+    async def process_product(self, product: dict, page: Page):
+        thumbnail = product.get("image", {}).get("hiRes")
+        price = product.get("price", {})
+        link = product.get("link")
 
-            payment_condition = None
-            cupom = None
-            short_url = None
+        payment_condition = None
+        cupom = None
+        short_url = None
 
-            try:
-                pdp_response = await page.request.get(
-                    f"https://www.amazon.com.br{link}"
-                )
+        pdp_response = await page.request.get(f"https://www.amazon.com.br{link}")
 
-                if pdp_response.ok:
-                    html = await pdp_response.text()
+        html = await pdp_response.text()
 
-                    match = re.search(r"Em até .*? sem juros", html)
-                    if match:
-                        payment_condition = match.group(0)
+        match = re.search(r"Em até .*? sem juros", html)
+        if match:
+            payment_condition = match.group(0)
 
-                    match = re.search(r"(com o cupom )(\w+).*?", html)
-                    if match:
-                        cupom = match.group(2)
+        match = re.search(r"(com o cupom )(\w+).*?", html)
+        if match:
+            cupom = match.group(2)
 
-                short_response = await page.request.get(
-                    f"https://www.amazon.com.br/associates/sitestripe/getShortUrl?longUrl=https://www.amazon.com.br{link}"
-                )
+        short_response = await page.request.get(
+            f"https://www.amazon.com.br/associates/sitestripe/getShortUrl?longUrl=https://www.amazon.com.br{link}"
+        )
+        short_data = await short_response.json()
+        short_url = short_data["shortUrl"]
 
-                short_data = await short_response.json() if short_response.ok else {}
-
-                short_url = short_data.get("shortUrl")
-
-            except Exception:
-                pass
-
-            return Product(
-                name=product.get("title"),
-                original_price=float(price.get("basisPrice", {}).get("price", 0.0)),
-                price_discount=float(price.get("priceToPay", {}).get("price", 0.0)),
-                url=short_url if short_url else f"https://www.amazon.com.br{link}",
-                payment_condition=payment_condition,
-                cupom=cupom,
-                thumbnail=(
-                    f"{thumbnail.get('baseUrl')}.{thumbnail.get('extension')}"
-                    if thumbnail
-                    else None
-                ),
-                discount=product.get("dealBadge", {})
-                .get("label", {})
-                .get("content", {})
-                .get("fragments", [{}])[0]
-                .get("text", ""),
-            )
+        return Product(
+            name=product.get("title"),
+            original_price=float(price.get("basisPrice", {}).get("price", 0.0)),
+            price_discount=float(price.get("priceToPay", {}).get("price", 0.0)),
+            url=short_url,
+            payment_condition=payment_condition,
+            cupom=cupom,
+            thumbnail=(
+                f"{thumbnail.get('baseUrl')}.{thumbnail.get('extension')}"
+                if thumbnail
+                else None
+            ),
+            discount=product.get("dealBadge", {})
+            .get("label", {})
+            .get("content", {})
+            .get("fragments", [{}])[0]
+            .get("text", ""),
+        )
 
     async def exec(self) -> list[Product]:
         browser = await BrowserManager.get_instance()
@@ -126,11 +115,17 @@ class Amazon(Base):
 
         data = await response.json()
 
-        sem = asyncio.Semaphore(int(self.product_limit / 5))
+        semaphore = asyncio.Semaphore(2)
 
-        tasks = [self.process_product(p, page, sem) for p in data["products"]]
+        async def process_with_limit(product, page):
+            async with semaphore:
+                return await self.process_product(product, page)
 
-        products = await asyncio.gather(*tasks)
+        tasks = [process_with_limit(product, page) for product in data["products"]]
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        products = [r for r in results if not isinstance(r, Exception)]
 
         await page.close()
 
