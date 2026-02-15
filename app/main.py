@@ -69,6 +69,12 @@ async def send_products_round_robin(wpp: Whatsapp):
 
 
 async def ingestion():
+    last_ingestion = await redis.redis.get("last_ingestion")
+
+    if last_ingestion and datetime.fromisoformat(last_ingestion).date() == datetime.now().date():
+        logger.info("📥 ingestão já realizada hoje")
+        return
+
     logger.info("📥 Iniciando ingestão...")
     await redis.clear()
 
@@ -83,6 +89,7 @@ async def ingestion():
                 await redis.add(key, product, 86400)
 
     logger.info("✅ Ingestão finalizada")
+    await redis.redis.set("last_ingestion", str(datetime.now()))
 
 
 async def main():
@@ -92,7 +99,6 @@ async def main():
     wpp = Whatsapp()
     await wpp.start()
 
-    await redis.clear()
     await ingestion()
 
     logger.info("📤 Iniciando worker de envio...")
