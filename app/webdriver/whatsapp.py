@@ -58,7 +58,7 @@ class Whatsapp(BaseMessenger):
 
         content = await response.body()
 
-        with open("./product.jpg", "wb") as f:
+        with open("./assets/product.jpg", "wb") as f:
             f.write(content)
 
         await self.page.click('button[aria-label="Anexar"]')
@@ -69,7 +69,7 @@ class Whatsapp(BaseMessenger):
             await self.page.get_by_label("Fotos e vídeos").click()
 
         file_chooser = await fc.value
-        await file_chooser.set_files("./product.jpg")
+        await file_chooser.set_files("./assets/product.jpg")
 
         box = self.page.locator(
             'div[contenteditable="true"][aria-placeholder="Digite uma mensagem"]'

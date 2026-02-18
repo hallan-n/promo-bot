@@ -28,6 +28,7 @@ settings = {
         "groups": {
             "whatsapp": [Group("RAPOSA CASA 1", "RAPOSA CASA 1")],
             "telegram": [Group("RAPOSA CASA", "-1003873620132")],
+            "instagram": [Group("PROMO RAPOSA", "promoraposa")]
         },
         "stores": [
             Amazon("Casa", 50, 15),
