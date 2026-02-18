@@ -2,10 +2,10 @@ import asyncio
 import json
 import re
 
+from base import BaseStore
 from departaments import AMAZON_DEPARTAMENTS
 from models import Product
 from playwright.async_api import Page
-from base import BaseStore
 from webdriver.browser import BrowserManager
 
 

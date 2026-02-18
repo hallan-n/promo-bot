@@ -1,4 +1,5 @@
 from playwright.async_api import async_playwright
+from services.logger import logger
 
 
 class BrowserManager:
@@ -24,3 +25,23 @@ class BrowserManager:
 
     async def new_page(self):
         return await self.context.new_page()
+
+    @classmethod
+    async def close(cls):
+        """Fecha a instância singleton ativa e limpa a referência"""
+        if cls._instance:
+            instance = cls._instance
+            try:
+                if instance.context:
+                    await instance.context.close()
+                    instance.context = None
+            except Exception as e:
+                logger.error(f"⚠️ Erro ao fechar o contexto: {e}")
+            finally:
+                try:
+                    if instance.playwright:
+                        await instance.playwright.stop()
+                        instance.playwright = None
+                except Exception as e:
+                    logger.error(f"⚠️ Erro ao parar o Playwright: {e}")
+                cls._instance = None

@@ -1,11 +1,11 @@
 import httpx
 from base import BaseMessenger
+from consts import TOKEN_TELEGRAM
 from models import Product
 from utils import format_brl
-from consts import TOKEN_TELEGRAM
+
 
 class Telegram(BaseMessenger):
-
     def get_template_message(self, product: Product) -> str:
         lines = [
             f"<b>🦊 {product.name}</b>\n",
@@ -26,12 +26,6 @@ class Telegram(BaseMessenger):
             lines.append(f'👉 <a href="{product.url}">{product.url}</a>')
 
         return "\n".join(lines)
-
-
-    
-
-
-
 
     async def send_message(self, channel_id, product: Product):
         async with httpx.AsyncClient() as client:

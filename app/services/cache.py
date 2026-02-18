@@ -28,9 +28,8 @@ class RedisCache:
     async def clear(self):
         await self.redis.flushdb()
 
-    async def get_products_by_group_name_id(self, name_id: str) -> list[Product]:
-
-        prefix = f"{name_id}:"
+    async def get_products_by_prefix(self, prefix: str) -> list[Product]:
+        prefix = f"{prefix}:"
         keys = await self.redis.keys(f"{prefix}*")
         products = []
 
@@ -41,9 +40,7 @@ class RedisCache:
 
         return products
 
-    async def get_products_by_prefix_with_keys(
-        self, prefix: str
-    ) -> list[Product]:
+    async def get_products_by_prefix_with_keys(self, prefix: str) -> list[tuple[str, Product]]:
         prefix = f"{prefix}:"
         keys = await self.redis.keys(f"{prefix}*")
         products = []

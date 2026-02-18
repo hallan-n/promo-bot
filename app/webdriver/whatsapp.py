@@ -1,13 +1,11 @@
 from base import BaseMessenger
 from models import Product
-from webdriver.browser import BrowserManager
 from utils import format_brl
+from webdriver.browser import BrowserManager
 
 
 class Whatsapp(BaseMessenger):
     def __init__(self):
-        self.playwright = None
-        self.context = None
         self.page = None
 
     async def start(self):
@@ -88,7 +86,3 @@ class Whatsapp(BaseMessenger):
         await self.page.wait_for_timeout(1000)
 
         await self.page.keyboard.press("Enter")
-
-    async def close(self):
-        await self.context.close()
-        await self.playwright.stop()
