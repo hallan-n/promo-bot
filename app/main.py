@@ -6,6 +6,7 @@ from services.cache import RedisCache
 from services.logger import logger
 from settings import settings
 from webdriver.browser import BrowserManager
+from webdriver.instagram import Instagram
 from webdriver.whatsapp import Whatsapp
 
 REDIS_CONN = "redis://localhost:6379"
@@ -80,7 +81,7 @@ async def send_products_round_robin(whatsapp: Whatsapp, telegram: Telegram):
                     await whatsapp.send_message(group.chat_id, product)
                     await redis.delete(key_item)
                     logger.info(
-                        f"✅ Produto '{product}' enviado para WhatsApp: {group.chat_id}"
+                        f"✅ Produto '{product.name[:30]}...' enviado para WhatsApp: {group.name}"
                     )
                     sent_any = True
                     await asyncio.sleep(MESSAGE_DELAY)
@@ -90,7 +91,7 @@ async def send_products_round_robin(whatsapp: Whatsapp, telegram: Telegram):
                     await telegram.send_message(group.chat_id, product)
                     await redis.delete(key_item)
                     logger.info(
-                        f"✅ Produto '{product}' enviado para Telegram: {group.chat_id}"
+                        f"✅ Produto '{product.name[:30]}...' enviado para Telegram: {group.name}"
                     )
                     sent_any = True
                     await asyncio.sleep(MESSAGE_DELAY)
@@ -105,26 +106,37 @@ async def send_products_round_robin(whatsapp: Whatsapp, telegram: Telegram):
 
 
 async def main():
-    await wait_until_working_hours()
+    instagram = Instagram()
+    await instagram.start()
 
-    logger.info("🚀 Iniciando WhatsApp...")
+    await instagram.send_message()
+    await instagram.send_message()
+    await instagram.send_message()
+    # await instagram.send_message()
 
-    whatsapp = Whatsapp()
+    # await wait_until_working_hours()
 
-    telegram = Telegram()
+    # logger.info("🚀 Iniciando WhatsApp...")
 
-    await whatsapp.start()
+    # whatsapp = Whatsapp()
 
-    await ingestion()
+    # telegram = Telegram()
 
-    logger.info("📤 Iniciando worker de envio...")
+    # await whatsapp.start()
 
-    await send_products_round_robin(whatsapp, telegram)
+    # await ingestion()
 
-    logger.info("🏁 Expediente finalizado")
+    # logger.info("📤 Iniciando worker de envio...")
 
-    await BrowserManager.close()
+    # await send_products_round_robin(whatsapp, telegram)
+
+    # logger.info("🏁 Expediente finalizado")
+
+    # await BrowserManager.close()
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+asyncio.run(main())

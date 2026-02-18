@@ -18,10 +18,22 @@ class BrowserManager:
 
     async def _start(self):
         self.playwright = await async_playwright().start()
-
+        path_to_extension = "/home/neves/Documentos/promo-bot/INSSIST"
+        user_data_dir = "./profile"
         self.context = await self.playwright.chromium.launch_persistent_context(
-            user_data_dir="./profile", channel="chrome", headless=False
+            user_data_dir,
+            headless=False,
+            channel="chromium",
+            args=[
+                f"--disable-extensions-except={path_to_extension}",
+                f"--load-extension={path_to_extension}",
+            ],
         )
+
+        if len(self.context.service_workers) == 0:
+            service_worker = await self.context.wait_for_event("serviceworker")
+        else:
+            service_worker = self.context.service_workers[0]
 
     async def new_page(self):
         return await self.context.new_page()
