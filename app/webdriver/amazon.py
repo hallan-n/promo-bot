@@ -5,11 +5,11 @@ import re
 from departaments import AMAZON_DEPARTAMENTS
 from models import Product
 from playwright.async_api import Page
-from webdriver.base import Base
+from base import BaseStore
 from webdriver.browser import BrowserManager
 
 
-class Amazon(Base):
+class Amazon(BaseStore):
     def __init__(
         self,
         departament: str,

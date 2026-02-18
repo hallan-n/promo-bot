@@ -1,8 +1,10 @@
+from base import BaseMessenger
 from models import Product
 from webdriver.browser import BrowserManager
+from utils import format_brl
 
 
-class Whatsapp:
+class Whatsapp(BaseMessenger):
     def __init__(self):
         self.playwright = None
         self.context = None
@@ -17,14 +19,11 @@ class Whatsapp:
             state="detached",
         )
 
-    def format_brl(self, value: float) -> str:
-        return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
     def get_template_message(self, product: Product) -> str:
         lines = [
             f"🦊 {product.name}\n",
-            f"~de R$ {self.format_brl(product.original_price)}~",
-            f"*por R$ {self.format_brl(product.price_discount)} 😱😱*\n",
+            f"~de R$ {format_brl(product.original_price)}~",
+            f"*por R$ {format_brl(product.price_discount)} 😱😱*\n",
         ]
 
         if product.payment_condition:

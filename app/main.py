@@ -1,18 +1,46 @@
 import asyncio
 from datetime import datetime
-
-from groups import groups
+from itertools import zip_longest
+from api.telegram import Telegram
+from settings import settings
 from services.cache import RedisCache
 from services.logger import logger
 from webdriver.whatsapp import Whatsapp
 
 MESSAGE_DELAY = 180
 REDIS_CONN = "redis://localhost:6379"
-START_HOUR = 11
-END_HOUR = 18
-CHECK_INTERVAL = 5
-
 redis = RedisCache(REDIS_CONN)
+
+
+
+MESSAGE_DELAY = 1       # delay entre grupos de mesma rodada
+ROUND_DELAY = 180       # delay após enviar para todas as categorias/grupos
+CHECK_INTERVAL = 10     # espera se não tiver produtos
+START_HOUR = 1
+END_HOUR = 18
+
+async def ingestion():
+    last_ingestion = await redis.redis.get("last_ingestion")
+
+    if last_ingestion and datetime.fromisoformat(last_ingestion).date() == datetime.now().date():
+        logger.info("📥 ingestão já realizada hoje")
+        return
+
+    logger.info("📥 Iniciando ingestão...")
+    await redis.clear()
+
+    for key, value in settings.items():
+        stores = value['stores']
+        for index_1, store in enumerate(stores):
+            products = await store.exec()
+            for index_2, product in enumerate(products):
+                redis_key = f"{key}:{index_1}-{index_2}"
+                await redis.add(redis_key, product, 86400)
+
+    logger.info("✅ Ingestão finalizada")
+    await redis.redis.set("last_ingestion", str(datetime.now()))
+      
+
 
 
 def in_working_hours():
@@ -26,9 +54,9 @@ async def wait_until_working_hours():
         await asyncio.sleep(60)
 
 
-async def send_products_round_robin(wpp: Whatsapp):
+async def send_products_round_robin(whatsapp: Whatsapp, telegram: Telegram):
     sem = asyncio.Semaphore(1)
-    empty_groups_logged = set()  # evita spam de log
+    empty_groups_logged = set()  
 
     while True:
         if not in_working_hours():
@@ -37,75 +65,59 @@ async def send_products_round_robin(wpp: Whatsapp):
 
         sent_any = False
 
-        for group in groups:
-            group_name = group["name"]
-            name_id = group["name_id"]
+        # loop por categoria
+        for key, value in settings.items():
+            whatsapp_groups = value['groups']['whatsapp']
+            telegram_groups = value['groups']['telegram']
 
-            items = await redis.get_products_by_group_name_id_with_keys(name_id)
-
+            items = await redis.get_products_by_prefix_with_keys(key)
             if not items:
-                if name_id not in empty_groups_logged:
-                    logger.info(f"📭 Produtos do grupo {group_name} acabaram")
-                    empty_groups_logged.add(name_id)
                 continue
 
-            # remove do controle se voltou a ter produtos
-            empty_groups_logged.discard(name_id)
+            # pega o primeiro item disponível
+            key_item, product = items[0]
 
-            key, product = items[0]
+            # envia para todos os grupos WhatsApp
+            for group in whatsapp_groups:
+                async with sem:
+                    await whatsapp.send_message(group.chat_id, product)
+                    await redis.delete(key_item)
+                    logger.info(f"✅ Produto '{product}' enviado para WhatsApp: {group.chat_id}")
+                    sent_any = True
+                    await asyncio.sleep(MESSAGE_DELAY)
 
-            async with sem:
-                await wpp.send_message(group_name, product)
-                await redis.delete(key)
-
-                logger.info(f"✅ Enviado para {group_name}")
-                sent_any = True
+            # envia para todos os grupos Telegram
+            for group in telegram_groups:
+                async with sem:
+                    await telegram.send_message(group.chat_id, product)
+                    await redis.delete(key_item)
+                    logger.info(f"✅ Produto '{product}' enviado para Telegram: {group.chat_id}")
+                    sent_any = True
+                    await asyncio.sleep(MESSAGE_DELAY)
 
         if sent_any:
-            logger.info(f"⏳ Aguardando {MESSAGE_DELAY}s para próxima rodada")
-            await asyncio.sleep(MESSAGE_DELAY)
+            logger.info(f"⏱ Rodada completa de envios concluída. Aguardando {ROUND_DELAY}s...")
+            await asyncio.sleep(ROUND_DELAY)
         else:
             await asyncio.sleep(CHECK_INTERVAL)
 
 
-async def ingestion():
-    last_ingestion = await redis.redis.get("last_ingestion")
-
-    if last_ingestion and datetime.fromisoformat(last_ingestion).date() == datetime.now().date():
-        logger.info("📥 ingestão já realizada hoje")
-        return
-
-    logger.info("📥 Iniciando ingestão...")
-    await redis.clear()
-
-    for i, group in enumerate(groups):
-        for j, store in enumerate(group.get("stores")):
-            products = await store.exec()
-            logger.info(
-                f"Processado {len(products)} produtos para Store {group['name']}"
-            )
-            for k, product in enumerate(products):
-                key = f"{group['name_id']}:{i}-{j}-{k}"
-                await redis.add(key, product, 86400)
-
-    logger.info("✅ Ingestão finalizada")
-    await redis.redis.set("last_ingestion", str(datetime.now()))
-
-
 async def main():
-    await wait_until_working_hours()
+    # await wait_until_working_hours()
 
     logger.info("🚀 Iniciando WhatsApp...")
-    wpp = Whatsapp()
-    await wpp.start()
+    whatsapp = Whatsapp()
+    telegram = Telegram()
 
-    await ingestion()
+    await whatsapp.start()
 
-    logger.info("📤 Iniciando worker de envio...")
+    # await ingestion()
 
-    await send_products_round_robin(wpp)
+    # logger.info("📤 Iniciando worker de envio...")
 
-    logger.info("🏁 Expediente finalizado")
+    await send_products_round_robin(whatsapp, telegram)
+
+    # logger.info("🏁 Expediente finalizado")
 
 
 if __name__ == "__main__":

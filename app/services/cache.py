@@ -41,10 +41,10 @@ class RedisCache:
 
         return products
 
-    async def get_products_by_group_name_id_with_keys(
-        self, name_id: str
+    async def get_products_by_prefix_with_keys(
+        self, prefix: str
     ) -> list[Product]:
-        prefix = f"{name_id}:"
+        prefix = f"{prefix}:"
         keys = await self.redis.keys(f"{prefix}*")
         products = []
 

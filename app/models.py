@@ -23,3 +23,9 @@ class Product(Base):
     url: str
     thumbnail: str
     fetched_at: str = datetime.now().isoformat()
+
+
+@dataclass
+class Group(Base):
+    name: str
+    chat_id: str
