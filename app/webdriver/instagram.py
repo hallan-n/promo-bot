@@ -29,7 +29,7 @@ class Instagram(BaseMessenger):
         await self.page.wait_for_timeout(500)
         await self.page.fill('input[placeholder="inssist.com"]', product.url)
         await self.page.wait_for_timeout(500)
-        await self.page.fill(f'input[placeholder="{str(urlparse(product.url).netloc).upper()}"]', "Comprar")
+        await self.page.fill(f'input[placeholder="{str(urlparse(product.url).netloc).upper()}"]', "Conferir ❤️")
         div_locator = self.page.locator(
             "div.absolute.opacity-0:has(div.cursor-crosshair)"
         )

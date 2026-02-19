@@ -216,6 +216,7 @@ async def main():
 
     await BrowserManager.close()
 
+    clear_dir("temp")
 
 if __name__ == "__main__":
     asyncio.run(main())
