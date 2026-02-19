@@ -21,7 +21,7 @@ MESSAGE_DELAY = 1  # delay entre grupos de mesma rodada
 ROUND_DELAY = 180  # delay após enviar para todas as categorias/grupos
 CHECK_INTERVAL = 10  # espera se não tiver produtos
 START_HOUR = 1
-END_HOUR = 18
+END_HOUR = 24
 
 
 def in_working_hours():
@@ -73,9 +73,11 @@ async def send_products_round_robin(
         sent_any = False
 
         for key, value in settings.items():
-            whatsapp_groups = value["groups"]["whatsapp"]
-            telegram_groups = value["groups"]["telegram"]
-            instagram_groups = value["groups"]["instagram"]
+            groups = value.get("groups", {})
+
+            whatsapp_groups = groups.get("whatsapp", [])
+            telegram_groups = groups.get("telegram", [])
+            instagram_groups = groups.get("instagram", [])
 
             items = await redis.get_products_by_prefix_with_keys(key)
             if not items:
@@ -112,6 +114,7 @@ async def send_products_round_robin(
                     )
                     sent_any = True
                     await asyncio.sleep(MESSAGE_DELAY)
+
 
         if sent_any:
             logger.info(
@@ -202,8 +205,8 @@ async def main():
     instagram = Instagram()
     telegram = Telegram()
 
-    await whatsapp.start()
     await instagram.start()
+    await whatsapp.start()
 
     logger.info("📤 Iniciando worker de envio...")
 
