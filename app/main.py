@@ -1,48 +1,19 @@
 import asyncio
-import os
-import shutil
 from datetime import datetime
 
 import httpx
 from api.telegram import Telegram
+from consts import CHECK_INTERVAL, MESSAGE_DELAY, REDIS_CONN, ROUND_DELAY
 from services.cache import RedisCache
 from services.image_editor import save_stories
 from services.logger import logger
 from settings import settings
+from utils import clear_dir, create_dir, in_working_hours, wait_until_working_hours
 from webdriver.browser import BrowserManager
 from webdriver.instagram import Instagram
 from webdriver.whatsapp import Whatsapp
 
-REDIS_CONN = "redis://localhost:6379"
 redis = RedisCache(REDIS_CONN)
-
-
-MESSAGE_DELAY = 1  # delay entre grupos de mesma rodada
-ROUND_DELAY = 180  # delay após enviar para todas as categorias/grupos
-CHECK_INTERVAL = 10  # espera se não tiver produtos
-START_HOUR = 7
-END_HOUR = 18
-
-
-def in_working_hours():
-    now = datetime.now().hour
-    return START_HOUR <= now < END_HOUR
-
-
-async def wait_until_working_hours():
-    while not in_working_hours:
-        logger.info("⏳ Aguardando início do expediente...")
-        await asyncio.sleep(60)
-
-
-def clear_dir(path_dir: str):
-    if os.path.exists(path_dir):
-        shutil.rmtree(path_dir)
-    os.makedirs(path_dir)
-
-
-def create_dir(path_dir: str):
-    os.makedirs(path_dir, exist_ok=True)
 
 
 async def ingestion():
