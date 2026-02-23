@@ -20,8 +20,8 @@ redis = RedisCache(REDIS_CONN)
 MESSAGE_DELAY = 1  # delay entre grupos de mesma rodada
 ROUND_DELAY = 180  # delay após enviar para todas as categorias/grupos
 CHECK_INTERVAL = 10  # espera se não tiver produtos
-START_HOUR = 1
-END_HOUR = 24
+START_HOUR = 7
+END_HOUR = 18
 
 
 def in_working_hours():
@@ -33,6 +33,16 @@ async def wait_until_working_hours():
     while not in_working_hours:
         logger.info("⏳ Aguardando início do expediente...")
         await asyncio.sleep(60)
+
+
+def clear_dir(path_dir: str):
+    if os.path.exists(path_dir):
+        shutil.rmtree(path_dir)
+    os.makedirs(path_dir)
+
+
+def create_dir(path_dir: str):
+    os.makedirs(path_dir, exist_ok=True)
 
 
 async def ingestion():
@@ -115,7 +125,6 @@ async def send_products_round_robin(
                     sent_any = True
                     await asyncio.sleep(MESSAGE_DELAY)
 
-
         if sent_any:
             logger.info(
                 f"⏱ Rodada completa de envios concluída. Aguardando {ROUND_DELAY}s..."
@@ -123,16 +132,6 @@ async def send_products_round_robin(
             await asyncio.sleep(ROUND_DELAY)
         else:
             await asyncio.sleep(CHECK_INTERVAL)
-
-
-def clear_dir(path_dir: str):
-    if os.path.exists(path_dir):
-        shutil.rmtree(path_dir)
-    os.makedirs(path_dir)
-
-
-def create_dir(path_dir: str):
-    os.makedirs(path_dir, exist_ok=True)
 
 
 async def process_storie(client, key, product, sem, max_retries=3):
@@ -155,10 +154,10 @@ async def process_storie(client, key, product, sem, max_retries=3):
                 return key
 
             except Exception as e:
-                print(f"[{key}] Tentativa {attempt} falhou: {e}")
+                logger.info(f"[{key}] Tentativa {attempt} falhou: {e}")
 
                 if attempt == max_retries:
-                    print(f"[{key}] Ignorado após {max_retries} tentativas")
+                    logger.info(f"[{key}] Ignorado após {max_retries} tentativas")
                     return None
 
                 await asyncio.sleep(1)
@@ -193,6 +192,18 @@ async def generate_stories():
     logger.info("✅ Stories processados com sucesso!")
 
 
+async def extract_all_contacts(whatsapp: Whatsapp, group_names: list) -> list:
+    numbers = set()
+
+    for group_name in group_names:
+        nums = await whatsapp.extra_contacts(group_name)
+
+        for number in nums:
+            numbers.add(number)
+
+    return list(numbers)
+
+
 async def main():
     await wait_until_working_hours()
 
@@ -217,6 +228,7 @@ async def main():
     await BrowserManager.close()
 
     clear_dir("temp")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

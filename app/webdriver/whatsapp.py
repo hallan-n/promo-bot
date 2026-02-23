@@ -1,5 +1,6 @@
 from base import BaseMessenger
 from models import Product
+from services.logger import logger
 from utils import format_brl
 from webdriver.browser import BrowserManager
 
@@ -38,21 +39,102 @@ class Whatsapp(BaseMessenger):
 
         return "\n".join(lines)
 
-    async def send_message(self, group_name, product: Product):
-
+    async def choose_chat(self, chat_name: str):
         message_list = await self.page.query_selector(
             'div[aria-label="Lista de conversas"]'
         )
-
-        await self.page.wait_for_timeout(1000)
-
         chat = await message_list.query_selector(
-            f'div[role="row"]:has(span:text("{group_name}"))'
+            f'div[role="row"]:has(span:text("{chat_name}"))'
+        )
+        await chat.click()
+        await self.page.wait_for_timeout(200)
+
+    async def extra_contacts(self, group_name) -> list:
+        await self.choose_chat(group_name)
+        await self.page.click("#main > header")
+        button = self.page.locator('div[role="button"]', has_text="Ver tudo")
+        await button.wait_for(state="visible")
+        await button.first.click()
+
+        scroll_containers = await self.page.query_selector_all(
+            'div[aria-label="Pesquisar membros"] div.copyable-area > div'
         )
 
-        await self.page.wait_for_timeout(1000)
+        if not scroll_containers:
+            return
 
-        await chat.click()
+        scroll_container = scroll_containers[-1]
+
+        if not scroll_containers:
+            return
+
+        previous = -1
+        numbers = set()
+
+        while True:
+            current = await scroll_container.evaluate("el => el.scrollTop")
+
+            if current == previous:
+                break
+
+            previous = current
+
+            await scroll_container.evaluate("""
+                el => el.scrollBy(0, el.clientHeight)
+            """)
+
+            spans = await scroll_container.query_selector_all(
+                'div[role="listitem"] span[title^="+"]'
+            )
+
+            for span in spans:
+                number = await span.inner_text()
+                numbers.add(number)
+
+        await self.page.click('button[aria-label="Fechar"]')
+        return list(numbers)
+
+    async def start_chat(self, number: str, message: str, image_path: str = None):
+
+        await self.page.click('button[aria-label="Nova conversa"]')
+
+        await self.page.fill('input[aria-label="Pesquisar nome ou número"]', number)
+
+        await self.page.click('div.copyable-area div[role="button"]')
+
+        if image_path:
+            await self.page.click('button[aria-label="Anexar"]')
+
+            await self.page.wait_for_timeout(1000)
+
+            async with self.page.expect_file_chooser() as fc:
+                await self.page.get_by_label("Fotos e vídeos").click()
+
+            file_chooser = await fc.value
+            await file_chooser.set_files(image_path)
+            await self.page.wait_for_timeout(500)
+
+        box = self.page.locator(
+            'div[contenteditable="true"][aria-placeholder="Digite uma mensagem"]'
+        ).first
+
+        if not box:
+            logger.error(f"❌ Erro ao enviar a mensagem")
+            await self.page.reload()
+            await self.page.wait_for_timeout(1000)
+            return
+
+        await self.page.wait_for_timeout(500)
+
+        await box.click()
+
+        await box.fill(message)
+
+        await self.page.keyboard.press("Enter")
+
+    async def send_message(self, group_name, product: Product):
+
+        await self.choose_chat(group_name)
 
         response = await self.page.request.get(product.thumbnail)
 
@@ -74,6 +156,12 @@ class Whatsapp(BaseMessenger):
         box = self.page.locator(
             'div[contenteditable="true"][aria-placeholder="Digite uma mensagem"]'
         ).first
+
+        if not box:
+            logger.error(f"❌ Erro ao enviar a mensagem")
+            await self.page.reload()
+            await self.page.wait_for_timeout(1000)
+            return
 
         await self.page.wait_for_timeout(1000)
 

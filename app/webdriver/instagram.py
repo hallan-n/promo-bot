@@ -1,8 +1,10 @@
-from models import Product
-from base import BaseMessenger
-from webdriver.browser import BrowserManager
+import os
 from urllib.parse import urlparse
 
+from base import BaseMessenger
+from models import Product
+from services.logger import logger
+from webdriver.browser import BrowserManager
 
 
 class Instagram(BaseMessenger):
@@ -18,6 +20,12 @@ class Instagram(BaseMessenger):
         await self.page.click('div[data-id="story"]')
 
     async def send_message(self, key: str, product: Product):
+        if not os.path.exists(f"temp/stories/{key}.png"):
+            logger.error(
+                f"❌ O Storie temp/stories/{key}.png não foi gerado corretamente."
+            )
+            return
+
         async with self.page.expect_file_chooser() as fc:
             await self.page.click("div.UploadCard")
 
@@ -29,7 +37,10 @@ class Instagram(BaseMessenger):
         await self.page.wait_for_timeout(500)
         await self.page.fill('input[placeholder="inssist.com"]', product.url)
         await self.page.wait_for_timeout(500)
-        await self.page.fill(f'input[placeholder="{str(urlparse(product.url).netloc).upper()}"]', "Conferir ❤️")
+        await self.page.fill(
+            f'input[placeholder="{str(urlparse(product.url).netloc).upper()}"]',
+            "amazon.com.br",
+        )
         div_locator = self.page.locator(
             "div.absolute.opacity-0:has(div.cursor-crosshair)"
         )

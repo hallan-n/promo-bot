@@ -9,3 +9,5 @@ product.jpg
 .env
 temp
 *.js
+*.json
+*.csv
