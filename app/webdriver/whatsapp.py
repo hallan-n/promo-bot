@@ -94,8 +94,7 @@ class Whatsapp(BaseMessenger):
         await self.page.click('button[aria-label="Fechar"]')
         return list(numbers)
 
-    async def start_chat(self, number: str, message: str, image_path: str = None):
-
+    async def send_chat(self, number: str, message: str, image_path: str = None):
         await self.page.click('button[aria-label="Nova conversa"]')
 
         await self.page.fill('input[aria-label="Pesquisar nome ou número"]', number)

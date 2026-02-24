@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-
+import json
 import httpx
 from api.telegram import Telegram
 from consts import CHECK_INTERVAL, MESSAGE_DELAY, REDIS_CONN, ROUND_DELAY
@@ -187,7 +187,6 @@ async def main():
     instagram = Instagram()
     telegram = Telegram()
 
-    await instagram.start()
     await whatsapp.start()
 
     logger.info("📤 Iniciando worker de envio...")
@@ -201,5 +200,70 @@ async def main():
     clear_dir("temp")
 
 
+
+async def invite_to_group():
+    insta_contacts = []
+    wpp_contacts = []
+    message = """
+Olá! Tudo bem? 😊
+Para economizar de verdade nas comprinhas para casa, criei o *Raposa Casa* 🏡 para compartilhar as melhores promoções, achadinhos e cupons exclusivos, tudo para o lar! 🛍️
+
+Se quiser acompanhar as ofertas, é só entrar no *Grupo Vip* aqui abaixo: ⬇️
+🔗 https://chat.whatsapp.com/ENCVj8nvoNwCOFR1sj3raK
+"""
+    
+    # with open("followers.json", "r") as doc:
+    #     insta_contacts = json.loads(doc.read())
+
+    # with open("contatos.json", "r") as doc:
+    #     wpp_contacts = json.loads(doc.read())
+    
+    insta_contacts = [{"Username": "hallan.neves"}, {"Username": "hallan.neves"}]
+    wpp_contacts = ["+55 27 98822-3839", "+55 27 98822-3839"]
+
+    instagram = Instagram()
+    whatsapp = Whatsapp()
+
+    await instagram.start("chat")
+    await whatsapp.start()
+    
+    try:
+        while insta_contacts or wpp_contacts:
+            first_insta = insta_contacts[0] if insta_contacts else None
+            first_wpp = wpp_contacts[0] if wpp_contacts else None
+
+            if first_insta:
+                await instagram.send_chat(first_insta.get("Username"), message, "assets/invite.png")
+                del insta_contacts[0]
+            if first_wpp:
+                await whatsapp.send_chat(first_wpp, message, "assets/invite.png")
+                del wpp_contacts[0]
+
+            
+            
+            logger.info(f"Faltam {len(insta_contacts)} perfis pro Instagram")
+            logger.info(f"Faltam {len(wpp_contacts)} contatos pro Whatsapp")
+    except Exception as e:
+        with open("followers1.json", "w") as doc:
+            doc.write(json.dumps(insta_contacts, indent=4))
+
+        with open("contatos1.json", "w") as doc:
+            doc.write(json.dumps(wpp_contacts, indent=4))
+
+        raise
+    
+    await asyncio.Event().wait()
+
+
+from api.whatsapp import Whatsapp as Wpp
+async def invite_to_group_2():
+
+    wpp = Wpp()
+
+
+    products = await redis.get_products_by_prefix_with_keys("casa")
+
+    await wpp.send_message("120363407409785193@g.us", products[0][1])
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(invite_to_group_2())

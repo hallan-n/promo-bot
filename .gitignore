@@ -8,6 +8,7 @@ asd.*
 product.jpg
 .env
 temp
-*.js
-*.json
 *.csv
+node_modules
+microsservices/zap-bot/auth
+microsservices/zap-bot/package-lock.json

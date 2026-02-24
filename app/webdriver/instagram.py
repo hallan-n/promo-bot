@@ -11,13 +11,33 @@ class Instagram(BaseMessenger):
     def __init__(self):
         self.page = None
 
-    async def start(self):
+    async def start(self, tab: str):
         browser = await BrowserManager.get_instance()
         self.page = await browser.new_page()
         await self.page.goto("https://www.instagram.com/promoraposa/")
         await self.page.reload()
-        await self.page.click("div.EmbedInssistMenuButton")
-        await self.page.click('div[data-id="story"]')
+        if tab == "chat":
+            await self.page.locator('div.HeroInteractionIgnoreWithDiv:has(a[href="/direct/inbox/"])').click()
+        else:
+            await self.page.click("div.EmbedInssistMenuButton")
+            await self.page.click('div[data-id="story"]')
+
+    async def send_chat(self, username: str, message: str, image_path: str = None):
+        await self.page.fill('input[name="searchInput"]', username)
+
+        await self.page.locator(f'div[role="button"]:has(span:has-text("{username}"))').click()
+
+        if image_path:
+            async with self.page.expect_file_chooser() as fc:
+                await self.page.locator('div.PressableText:has(svg[aria-label="Adicionar foto ou vídeo"])').click()
+
+            file_chooser = await fc.value
+            await file_chooser.set_files(image_path)
+            await self.page.wait_for_timeout(500)
+            await self.page.locator(f'div[role="button"]:has-text("Enviar")').click()
+
+        await self.page.fill('div.LexicalContentEditable_prod[aria-label="Mensagem"]', message)
+        await self.page.locator(f'div[role="button"]:has-text("Enviar")').click()
 
     async def send_message(self, key: str, product: Product):
         if not os.path.exists(f"temp/stories/{key}.png"):
@@ -44,7 +64,7 @@ class Instagram(BaseMessenger):
         div_locator = self.page.locator(
             "div.absolute.opacity-0:has(div.cursor-crosshair)"
         )
-        await div_locator.wait_for(timeout=5000)
+        await div_locator.wait_for()
         div = await div_locator.element_handle()
         box = await div.bounding_box()
         center_x = box["x"] + box["width"] / 2

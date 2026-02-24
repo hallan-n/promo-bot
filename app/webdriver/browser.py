@@ -29,6 +29,7 @@ class BrowserManager:
                 f"--load-extension={path_to_extension}",
             ],
         )
+        self.context.set_default_timeout(30000)
 
         if len(self.context.service_workers) == 0:
             service_worker = await self.context.wait_for_event("serviceworker")
