@@ -18,9 +18,9 @@ class BrowserManager:
     async def _start(self):
         self.playwright = await async_playwright().start()
         extension_1 = "./extensions/INSSIST"
-        extension_2 = "./extensions/Revizap"
+        # extension_2 = "./extensions/Revizap"
 
-        extensions = f"{extension_1},{extension_2}"
+        extensions = f"{extension_1}"
 
         user_data_dir = "./profile"
         self.context = await self.playwright.chromium.launch_persistent_context(
