@@ -196,11 +196,11 @@ async def main():
     # await send_products_round_robin(whatsapp, telegram, instagram)
     # await send_products_round_robin(None, None, instagram)
 
-    logger.info("🏁 Expediente finalizado")
+    # logger.info("🏁 Expediente finalizado")
 
-    await BrowserManager.close()
+    # await BrowserManager.close()
 
-    clear_dir("temp")
+    # clear_dir("temp")
 
 
 
