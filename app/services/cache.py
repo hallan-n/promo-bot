@@ -2,6 +2,7 @@ import json
 
 from models import Product
 from redis.asyncio import Redis
+import random
 
 
 class RedisCache:
@@ -27,6 +28,46 @@ class RedisCache:
 
     async def clear(self):
         await self.redis.flushdb()
+
+    async def get_random_products_with_key(self, prefix: str) -> list[tuple[str, Product]]:
+        prefix = f"{prefix}:"
+        keys: list[str] = []
+
+        async for key in self.redis.scan_iter(match=f"{prefix}*"):
+            keys.append(key)
+
+        if not keys:
+            return []
+
+        random.shuffle(keys)
+
+        result: list[tuple[str, Product]] = []
+        for key in keys:
+            product = await self.get(key)
+            if product:
+                result.append((key, product))
+
+        return result
+
+    async def get_random_products(self, prefix: str) -> list[Product]:
+        prefix = f"{prefix}:"
+        keys: list[str] = []
+
+        async for key in self.redis.scan_iter(match=f"{prefix}*"):
+            keys.append(key)
+
+        if not keys:
+            return []
+
+        random.shuffle(keys)
+
+        products: list[Product] = []
+        for key in keys:
+            product = await self.get(key)
+            if product:
+                products.append(product)
+
+        return products
 
     async def get_products_by_prefix(self, prefix: str) -> list[Product]:
         prefix = f"{prefix}:"

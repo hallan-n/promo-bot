@@ -1,7 +1,7 @@
 import asyncio
 
 import httpx
-from base import BaseMessenger
+from services.webdriver.base import BaseMessenger
 from consts import TOKEN_TELEGRAM
 from models import Product
 from utils import format_brl

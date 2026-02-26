@@ -2,27 +2,18 @@ import asyncio
 import json
 import re
 
-from base import BaseStore
-from departaments import AMAZON_DEPARTAMENTS
+from services.webdriver.base import BaseStore
 from models import Product
 from playwright.async_api import Page
-from webdriver.browser import BrowserManager
+from services.webdriver.browser import BrowserManager
 
 
 class Amazon(BaseStore):
-    def __init__(
-        self,
-        departament: str,
-        product_limit: int,
-        min_discount: int,
-        sub_departament: str = None,
-    ):
+    def __init__(self, departament_code: str, product_limit: int, min_discount: int, max_discount: int):
+        self.departament_code = departament_code
         self.product_limit = product_limit
         self.min_discount = min_discount
-        if sub_departament:
-            self.departament_code = f"{AMAZON_DEPARTAMENTS[departament]['code']}/{AMAZON_DEPARTAMENTS[departament]['subs'][sub_departament]}"
-        else:
-            self.departament_code = AMAZON_DEPARTAMENTS[departament]["code"]
+        self.max_discount = max_discount
 
     async def process_product(self, product: dict, page: Page):
         thumbnail = product.get("image", {}).get("hiRes")
@@ -100,7 +91,7 @@ class Amazon(BaseStore):
                 [{"id": "departments", "value": [self.departament_code]}]
             ),
             "rangeRefinementFilters": compact(
-                [{"id": "percentOff", "min": self.min_discount, "max": 70}]
+                [{"id": "percentOff", "min": self.min_discount, "max": self.max_discount}]
             ),
             "pinningConfiguration": compact({"pinnedPromotionsLayoutGroup": "default"}),
         }
@@ -115,7 +106,7 @@ class Amazon(BaseStore):
 
         data = await response.json()
 
-        semaphore = asyncio.Semaphore(2)
+        semaphore = asyncio.Semaphore(4)
 
         async def process_with_limit(product, page):
             async with semaphore:

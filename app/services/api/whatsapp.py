@@ -2,7 +2,7 @@
 
 import httpx
 import asyncio
-from base import BaseMessenger
+from services.webdriver.base import BaseMessenger
 from models import Product
 from utils import format_brl
 

@@ -12,3 +12,5 @@ temp
 node_modules
 microsservices/zap-bot/auth
 microsservices/zap-bot/package-lock.json
+contatos*.json
+followers*.json

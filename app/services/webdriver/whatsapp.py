@@ -1,18 +1,22 @@
-from base import BaseMessenger
+from services.webdriver.base import BaseMessenger
 from models import Product
 from services.logger import logger
 from utils import format_brl
-from webdriver.browser import BrowserManager
+from services.webdriver.browser import BrowserManager
+import asyncio
+from playwright.async_api import TimeoutError
 
 
 class Whatsapp(BaseMessenger):
     def __init__(self):
         self.page = None
 
-    async def start(self):
+    async def start(self, tab: str = None):
         browser = await BrowserManager.get_instance()
         self.page = await browser.new_page()
         await self.page.goto("https://web.whatsapp.com/")
+        if tab == "chat":
+            asyncio.create_task(self.auto_click_ok())
         await self.page.wait_for_selector(
             'div:has-text("Protegida com a criptografia de ponta a ponta")',
             state="detached",
@@ -94,7 +98,21 @@ class Whatsapp(BaseMessenger):
         await self.page.click('button[aria-label="Fechar"]')
         return list(numbers)
 
+    async def auto_click_ok(self):
+        while True:
+            try:
+                button = self.page.locator('button:has-text("OK")')
+                await button.wait_for(state="visible", timeout=2000)
+                await button.click()
+                logger.info("Botão OK clicado")
+            except TimeoutError:
+                pass  # não apareceu ainda
+
+            await asyncio.sleep(1)  # evita loop muito agressivo
+
     async def send_chat(self, number: str, message: str, image_path: str = None):
+        await self.page.click('button[aria-label="Conversas"]')
+
         await self.page.click('button[aria-label="Nova conversa"]')
 
         await self.page.fill('input[aria-label="Pesquisar nome ou número"]', number)
@@ -130,6 +148,12 @@ class Whatsapp(BaseMessenger):
         await box.fill(message)
 
         await self.page.keyboard.press("Enter")
+
+        await self.page.click('button[aria-label="Conversas"]')
+
+        await self.page.wait_for_timeout(300)
+
+        await self.page.keyboard.press("Escape")
 
     async def send_message(self, group_name, product: Product):
 

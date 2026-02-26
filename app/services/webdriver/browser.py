@@ -1,7 +1,6 @@
 from playwright.async_api import async_playwright
 from services.logger import logger
 
-
 class BrowserManager:
     _instance = None
 
@@ -18,15 +17,16 @@ class BrowserManager:
 
     async def _start(self):
         self.playwright = await async_playwright().start()
-        path_to_extension = "/home/neves/Documentos/promo-bot/INSSIST"
+        path_to_extension_1 = "/INSSIST"
+        path_to_extension_2 = "/Revizap"
         user_data_dir = "./profile"
         self.context = await self.playwright.chromium.launch_persistent_context(
             user_data_dir,
             headless=False,
             channel="chromium",
             args=[
-                f"--disable-extensions-except={path_to_extension}",
-                f"--load-extension={path_to_extension}",
+                f"--disable-extensions-except={path_to_extension_1},{path_to_extension_2}",
+                f"--load-extension={path_to_extension_1},{path_to_extension_2}",
             ],
         )
         self.context.set_default_timeout(30000)

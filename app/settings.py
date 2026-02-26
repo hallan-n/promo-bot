@@ -1,5 +1,5 @@
 from models import Group
-from webdriver.amazon import Amazon
+from services.webdriver.amazon import Amazon
 
 settings = {
     "tech": {
@@ -8,9 +8,9 @@ settings = {
             "telegram": [Group("RAPOSA TECH", "-1003870991490")],
         },
         "stores": [
-            Amazon("Games e Consoles", 40, 15),
-            Amazon("Computadores e Informática", 50, 15),
-            Amazon("Eletrônicos e Tecnologia", 20, 15),
+            Amazon("7791986011", 40, 15, 100),
+            Amazon("16339927011", 50, 15, 100),
+            Amazon("16209063011", 20, 15, 100),
         ],
     },
     "kids": {
@@ -19,9 +19,9 @@ settings = {
             "telegram": [Group("RAPOSA KIDS", "-1003740187480")],
         },
         "stores": [
-            Amazon("Brinquedos e Jogos", 10, 15, "Brinquedos para Bebês e Crianças Pequenas"),
-            Amazon("Brinquedos e Jogos", 20, 15, "Esportes e Brincadeiras ao Ar Livre"),
-            Amazon("Bebês", 70, 10),
+            Amazon("16194300011/16746739011", 10, 15, 100),
+            Amazon("16194300011/121856382011", 20, 15, 100),
+            Amazon("17242604011", 70, 10, 100),
         ],
     },
     "casa": {
@@ -31,9 +31,9 @@ settings = {
             "instagram": [Group("PROMO RAPOSA", "promoraposa")]
         },
         "stores": [
-            Amazon("Casa", 50, 15),
-            Amazon("Cozinha", 10, 15),
-            Amazon("Eletrodomésticos", 40, 10),
+            Amazon("16191001011", 50, 15, 100),
+            Amazon("16957126011", 10, 15, 100),
+            Amazon("16522083011", 40, 10, 100),
         ],
     },
     "beleza": {
@@ -42,12 +42,12 @@ settings = {
             "telegram": [Group("RAPOSA BELEZA", "-1003880469938")],
         },
         "stores": [
-            Amazon("Beleza", 30, 10, "Cuidados com o Cabelo"),
-            Amazon("Beleza", 30, 10, "Pele"),
-            Amazon("Beleza", 15, 10, "Perfumes"),
-            Amazon("Beleza", 15, 10, "Maquiagem"),
-            Amazon("Beleza", 5, 10, "Manicure e Pedicure"),
-            Amazon("Beleza", 5, 10, "Utensílios e Acessórios"),
+            Amazon("16194415011/16754346011", 30, 10, 100),
+            Amazon("16194415011/16754345011", 30, 10, 100),
+            Amazon("16194415011/16754347011", 15, 10, 100),
+            Amazon("16194415011/16754350011", 15, 10, 100),
+            Amazon("16194415011/16754349011", 5, 10, 100),
+            Amazon("16194415011/16754348011", 5, 10, 100),
         ],
     },
 }

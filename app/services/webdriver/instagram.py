@@ -1,17 +1,17 @@
 import os
 from urllib.parse import urlparse
 
-from base import BaseMessenger
+from services.webdriver.base import BaseMessenger
 from models import Product
 from services.logger import logger
-from webdriver.browser import BrowserManager
+from services.webdriver.browser import BrowserManager
 
 
 class Instagram(BaseMessenger):
     def __init__(self):
         self.page = None
 
-    async def start(self, tab: str):
+    async def start(self, tab: str = None):
         browser = await BrowserManager.get_instance()
         self.page = await browser.new_page()
         await self.page.goto("https://www.instagram.com/promoraposa/")
@@ -23,22 +23,29 @@ class Instagram(BaseMessenger):
             await self.page.click('div[data-id="story"]')
 
     async def send_chat(self, username: str, message: str, image_path: str = None):
-        await self.page.fill('input[name="searchInput"]', username)
+        try:
+            await self.page.fill('input[name="searchInput"]', "")
+            await self.page.locator('input[name="searchInput"]').type(username)
+            await self.page.locator(f'div.WebPressable[role="button"]:has-text("{username}") >> nth=0').click(timeout=6000)
 
-        await self.page.locator(f'div[role="button"]:has(span:has-text("{username}"))').click()
+            if image_path:
+                async with self.page.expect_file_chooser() as fc:
+                    await self.page.locator('div.PressableText:has(svg[aria-label="Adicionar foto ou vídeo"])').click()
 
-        if image_path:
-            async with self.page.expect_file_chooser() as fc:
-                await self.page.locator('div.PressableText:has(svg[aria-label="Adicionar foto ou vídeo"])').click()
+                file_chooser = await fc.value
+                await file_chooser.set_files(image_path)
+                await self.page.wait_for_timeout(500)
+                await self.page.locator(f'div[role="button"]:has-text("Enviar")').click()
 
-            file_chooser = await fc.value
-            await file_chooser.set_files(image_path)
-            await self.page.wait_for_timeout(500)
+            await self.page.fill('div.LexicalContentEditable_prod[aria-label="Mensagem"][contenteditable="true"]', message)
             await self.page.locator(f'div[role="button"]:has-text("Enviar")').click()
-
-        await self.page.fill('div.LexicalContentEditable_prod[aria-label="Mensagem"]', message)
-        await self.page.locator(f'div[role="button"]:has-text("Enviar")').click()
-
+            await self.page.wait_for_timeout(300)
+            await self.page.locator('div.HeroInteractionIgnoreWithDiv:has(a[href="/direct/inbox/"])').click()
+        except:
+            logger.info(f"{username} não encontrado!")
+            await self.page.wait_for_timeout(300)
+            await self.page.locator('div.HeroInteractionIgnoreWithDiv:has(a[href="/direct/inbox/"])').click()
+        
     async def send_message(self, key: str, product: Product):
         if not os.path.exists(f"temp/stories/{key}.png"):
             logger.error(

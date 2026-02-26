@@ -1,0 +1,32 @@
+{
+   "action": {
+      "default_icon": "assets/icon.png"
+   },
+   "background": {
+      "service_worker": "/background.js"
+   },
+   "content_scripts": [ {
+      "js": [ "/index.js" ],
+      "matches": [ "https://web.whatsapp.com/*" ]
+   }, {
+      "js": [ "/whatsapp-functions.js" ],
+      "matches": [ "https://web.whatsapp.com/*" ],
+      "world": "MAIN"
+   } ],
+   "description": "Revzap - Automação para o seu Whatsapp!",
+   "host_permissions": [ "https://web.whatsapp.com/*", "https://api.revzap.com.br/*", "https://clients2.google.com/service/update2/crx/*" ],
+   "icons": {
+      "128": "assets/icon.png",
+      "16": "assets/icon.png",
+      "48": "assets/icon.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAh4iGsDE3G7Za0fMtoaEPUJ1VCnoUwvsQOa/ZrIxDOY4BesaN2Hdo2sneU27WnOnrDj3w3GxWfz+vbePwF5VtunqClqb7cM0j1e8OwwxwE+I9KABR1ujdCQqKzUbVrcugDErSlWV5zsI/usvanYTs+Q+1GKPSOh5vtEdJ1u0cuAVBYZZh+34OWoRkDeTa+SZLSid/5t+pZFbuLzbYBKrkp1MAwWpbhr40f1FUeFtKvfrVUziqRmcREdnuTGJXSjlRSgk+s+VviY8GhWNOWvYhossy18nZncSlOs72QBgNA9RIVB9p+lGjQQKL/OwqcEZe/LWeNnu+MM9AgGA5fN2nPQIDAQAB",
+   "manifest_version": 3,
+   "name": "Revzap",
+   "permissions": [ "unlimitedStorage", "alarms", "tabs", "storage" ],
+   "version": "2.0.9.3",
+   "web_accessible_resources": [ {
+      "matches": [ "https://web.whatsapp.com/*" ],
+      "resources": [ "/assets/*", "/whatsapp-functions.js", "/mensagens.json" ]
+   } ]
+}
