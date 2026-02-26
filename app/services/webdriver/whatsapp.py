@@ -15,6 +15,8 @@ class Whatsapp(BaseMessenger):
         browser = await BrowserManager.get_instance()
         self.page = await browser.new_page()
         await self.page.goto("https://web.whatsapp.com/")
+        await self.page.wait_for_load_state("domcontentloaded")
+
         if tab == "chat":
             asyncio.create_task(self.auto_click_ok())
         await self.page.wait_for_selector(

@@ -15,6 +15,8 @@ class Instagram(BaseMessenger):
         browser = await BrowserManager.get_instance()
         self.page = await browser.new_page()
         await self.page.goto("https://www.instagram.com/promoraposa/")
+        await self.page.wait_for_load_state("domcontentloaded")
+
         await self.page.reload()
         if tab == "chat":
             await self.page.locator('div.HeroInteractionIgnoreWithDiv:has(a[href="/direct/inbox/"])').click()
