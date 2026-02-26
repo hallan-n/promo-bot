@@ -3,7 +3,6 @@ __pycache__
 app/sessions
 profile
 promo-bot
-extensions
 asd.*
 product.jpg
 .env
