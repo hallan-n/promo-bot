@@ -213,18 +213,5 @@ async def main():
 
     clear_dir("temp")
 
-from services.webdriver.whatsapp_simple import WhatsappSimple
-async def wpp_groups():
-
-    whatsapp1 = WhatsappSimple("whatsapp1")
-    whatsapp2 = WhatsappSimple("whatsapp2")
-    whatsapp3 = WhatsappSimple("whatsapp3")
-
-    await whatsapp1.start()
-    await whatsapp2.start()
-    await whatsapp3.start()
-
-    await asyncio.Event().wait()
-
 if __name__ == "__main__":
-    asyncio.run(wpp_groups())
+    asyncio.run(main())
