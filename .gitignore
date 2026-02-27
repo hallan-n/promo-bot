@@ -1,7 +1,7 @@
 venv
 __pycache__
 app/sessions
-profile
+profiles
 promo-bot
 asd.*
 product.jpg
@@ -13,3 +13,4 @@ microsservices/zap-bot/auth
 microsservices/zap-bot/package-lock.json
 contatos*.json
 followers*.json
+/extensions/Revizap

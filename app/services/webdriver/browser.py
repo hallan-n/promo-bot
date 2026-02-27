@@ -22,7 +22,7 @@ class BrowserManager:
 
         extensions = f"{extension_1}"
 
-        user_data_dir = "./profile"
+        user_data_dir = "./profiles/profile"
         self.context = await self.playwright.chromium.launch_persistent_context(
             user_data_dir,
             headless=False,
