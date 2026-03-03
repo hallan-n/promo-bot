@@ -14,3 +14,6 @@ microsservices/zap-bot/package-lock.json
 contatos*.json
 followers*.json
 /extensions/Revizap
+/app/services/webdriver/profile
+/zap-bot/.ww*
+package-lock.json

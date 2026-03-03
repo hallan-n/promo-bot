@@ -26,7 +26,7 @@ settings = {
     # },
     "casa": {
         "groups": {
-            "whatsapp": [Group("RAPOSA CASA 1", "RAPOSA CASA 1")],
+            "whatsapp": [Group("RAPOSA CASA 1", "120363407409785193@g.us")],
             "telegram": [Group("RAPOSA CASA", "-1003873620132")],
             "instagram": [Group("PROMO RAPOSA", "promoraposa")]
         },

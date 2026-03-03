@@ -42,41 +42,38 @@ class Whatsapp(BaseMessenger):
 
         for attempt in range(3):
             try:
-
                 thumbnail_response = await self.client.get(product.thumbnail)
                 image_bytes = thumbnail_response.read()
+                
                 data = {
-                    "number": chat_id,
-                    "text": caption
+                    "destino": chat_id,
+                    "mensagem": caption
                 }
+
                 files = {
-                    "image": ("image.jpg", image_bytes, "image/jpg")
+                    "imagem": (
+                        f"imagem.{product.thumbnail.split('.')[-1]}",
+                        image_bytes,
+                        f"image/{product.thumbnail.split('.')[-1]}") 
                 }
 
                 response = await self.client.post(url, data=data, files=files)
-
-                print(response.status_code)
-                print(response.json())
-
                 response.raise_for_status()
                 return
-            
 
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 429:
-                    retry_after = (
-                        e.response.json().get("parameters", {}).get("retry_after", 5)
-                    )
+                    retry_after = e.response.json().get("detalhes", {}).get("retry_after", 5)
                     await asyncio.sleep(int(retry_after))
                     continue
                 if 500 <= e.response.status_code < 600:
                     await asyncio.sleep(2**attempt)
                     continue
                 raise
-            except httpx.ReadTimeout:
+            except (httpx.ReadTimeout, httpx.ConnectError):
                 await asyncio.sleep(2**attempt)
 
-        raise RuntimeError("Failed to send message after retries")
+        raise RuntimeError(f"Falha ao enviar oferta para {chat_id} após 3 tentativas")
 
     async def close(self):
         await self.client.aclose()

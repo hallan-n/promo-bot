@@ -17,15 +17,14 @@ class BrowserManager:
 
     async def _start(self):
         self.playwright = await async_playwright().start()
-        extension_1 = "./extensions/INSSIST"
-        # extension_2 = "./extensions/Revizap"
+        extension_1 = "./services/webdriver/extensions/INSSIST"
 
         extensions = f"{extension_1}"
 
-        user_data_dir = "./profiles/profile"
+        user_data_dir = "./services/webdriver/profile"
         self.context = await self.playwright.chromium.launch_persistent_context(
             user_data_dir,
-            headless=False,
+            headless=True,
             channel="chromium",
             args=[
                 f"--disable-extensions-except={extensions}",

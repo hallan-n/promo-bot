@@ -11,7 +11,7 @@ from settings import settings
 from utils import clear_dir, create_dir, in_working_hours, wait_until_working_hours
 from services.webdriver.browser import BrowserManager
 from services.webdriver.instagram import Instagram
-from services.webdriver.whatsapp import Whatsapp
+from services.api.whatsapp import Whatsapp
 
 redis = RedisCache(REDIS_CONN)
 
@@ -166,7 +166,6 @@ async def generate_stories():
     clear_dir("temp/products")
     logger.info("✅ Stories processados com sucesso!")
 
-
 async def extract_all_contacts(whatsapp: Whatsapp, group_names: list) -> list:
     numbers = set()
 
@@ -201,7 +200,6 @@ async def main():
     # telegram = Telegram()
 
     await instagram.start()
-    await whatsapp.start()
 
     logger.info("📤 Iniciando worker de envio...")
 
