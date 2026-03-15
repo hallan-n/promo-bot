@@ -15,5 +15,8 @@ contatos*.json
 followers*.json
 /extensions/Revizap
 /app/services/webdriver/profile
-/zap-bot/.ww*
+/azap-api/.wwebjs_auth
+/zap-api/.wwebjs_cache
+/zap-api/.ww*
+/services/webdriver/profile
 package-lock.json

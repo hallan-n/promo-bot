@@ -24,7 +24,7 @@ class BrowserManager:
         user_data_dir = "./services/webdriver/profile"
         self.context = await self.playwright.chromium.launch_persistent_context(
             user_data_dir,
-            headless=True,
+            headless=False,
             channel="chromium",
             args=[
                 f"--disable-extensions-except={extensions}",
@@ -33,10 +33,6 @@ class BrowserManager:
         )
         self.context.set_default_timeout(30000)
 
-        if len(self.context.service_workers) == 0:
-            service_worker = await self.context.wait_for_event("serviceworker")
-        else:
-            service_worker = self.context.service_workers[0]
 
     async def new_page(self):
         return await self.context.new_page()

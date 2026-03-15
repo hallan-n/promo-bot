@@ -75,5 +75,35 @@ class Whatsapp(BaseMessenger):
 
         raise RuntimeError(f"Falha ao enviar oferta para {chat_id} após 3 tentativas")
 
+    
+    async def send_chat(self, number, caption):
+        url = "http://localhost:3000/send"
+
+        for attempt in range(3):
+            try:
+                
+                data = {
+                    "destino": number,
+                    "mensagem": caption
+                }
+                response = await self.client.post(url, data=data)
+                response.raise_for_status()
+                return
+
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    retry_after = e.response.json().get("detalhes", {}).get("retry_after", 5)
+                    await asyncio.sleep(int(retry_after))
+                    continue
+                if 500 <= e.response.status_code < 600:
+                    await asyncio.sleep(2**attempt)
+                    continue
+                raise
+            except (httpx.ReadTimeout, httpx.ConnectError):
+                await asyncio.sleep(2**attempt)
+
+        raise RuntimeError(f"Falha ao enviar oferta para {number} após 3 tentativas")
+
+
     async def close(self):
         await self.client.aclose()

@@ -166,18 +166,6 @@ async def generate_stories():
     clear_dir("temp/products")
     logger.info("✅ Stories processados com sucesso!")
 
-async def extract_all_contacts(whatsapp: Whatsapp, group_names: list) -> list:
-    numbers = set()
-
-    for group_name in group_names:
-        nums = await whatsapp.extra_contacts(group_name)
-
-        for number in nums:
-            numbers.add(number)
-
-    return list(numbers)
-
-
 async def main():
     await wait_until_working_hours()
 
@@ -196,7 +184,7 @@ async def main():
     telegram = None
 
     whatsapp = Whatsapp()
-    instagram = Instagram()
+    # instagram = Instagram()
     # telegram = Telegram()
 
     await instagram.start()
