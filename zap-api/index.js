@@ -117,4 +117,38 @@ app.get('/group/:id', async (req, res) => {
     }
 });
 
+app.post('/add-to-group', async (req, res) => {
+    const { groupId, numeros } = req.body;
+
+    if (!groupId || !numeros || !Array.isArray(numeros)) {
+        return res.status(400).json({ erro: "Envie groupId e array de numeros" });
+    }
+
+    try {
+        const chat = await client.getChatById(groupId);
+
+        if (!chat.isGroup) {
+            return res.status(400).json({ erro: "ID não pertence a grupo" });
+        }
+
+        const formatados = numeros.map(n =>
+            `${n.replace(/\D/g, '')}@c.us`
+        );
+
+        const resultado = await chat.addParticipants(formatados);
+
+        res.json({
+            status: "Processado",
+            resultado
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            erro: "Falha ao adicionar",
+            detalhes: error.message
+        });
+    }
+});
+
 app.listen(3000, () => console.log('🌐 Microsserviço rodando na porta 3000'));
