@@ -6,6 +6,7 @@ promo-bot
 asd.*
 product.jpg
 .env
+*.json
 temp
 *.csv
 node_modules

@@ -9,7 +9,9 @@ class Base:
 
     def json(self):
         return json.dumps(asdict(self))
-
+    
+def to_brl(value: float) -> str:
+    return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 @dataclass
 class Product(Base):
@@ -23,8 +25,6 @@ class Product(Base):
     thumbnail: str
     fetched_at: str = datetime.now().isoformat()
 
-
-@dataclass
-class Group(Base):
-    name: str
-    chat_id: str
+    # def __post_init__(self):
+    #     self.original_price = to_brl(self.original_price)
+    #     self.price_discount = to_brl(self.price_discount)
