@@ -1,8 +1,8 @@
-from pathlib import Path
 import json
+from pathlib import Path
 
-from playwright.async_api import BrowserContext, Page
 from logger import logger
+from playwright.async_api import BrowserContext, Page
 
 
 async def export_session(context: BrowserContext, file_path: str = "session.json"):
@@ -66,9 +66,7 @@ async def inject_session(
     file_path: str = "session.json",
 ):
     logger.info("Iniciando injeção de sessão")
-    data = json.loads(
-        Path(file_path).read_text(encoding="utf-8")
-    )
+    data = json.loads(Path(file_path).read_text(encoding="utf-8"))
 
     if data.get("cookies"):
         await page.context.add_cookies(data["cookies"])

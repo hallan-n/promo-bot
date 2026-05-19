@@ -2,6 +2,7 @@ import json
 from dataclasses import asdict, dataclass
 from datetime import datetime
 
+
 @dataclass
 class Base:
     def dict(self):
@@ -9,9 +10,11 @@ class Base:
 
     def json(self):
         return json.dumps(asdict(self))
-    
+
+
 def to_brl(value: float) -> str:
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
 
 @dataclass
 class Product(Base):

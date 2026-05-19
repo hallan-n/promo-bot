@@ -2,10 +2,10 @@ import asyncio
 import json
 import re
 
-from session import inject_session
-from models import Product
-from playwright.async_api import Page, Browser
 from logger import logger
+from models import Product
+from playwright.async_api import Browser, Page
+from session import inject_session
 
 
 async def _process_product(product: dict, page: Page):
@@ -52,8 +52,15 @@ async def _process_product(product: dict, page: Page):
         .get("text", ""),
     )
 
-async def get_products(browser: Browser, departament_code: str, product_limit: int, min_discount: int, max_discount: int) -> list[Product]:
-    
+
+async def get_products(
+    browser: Browser,
+    departament_code: str,
+    product_limit: int,
+    min_discount: int,
+    max_discount: int,
+) -> list[Product]:
+
     page = await browser.new_page()
     await inject_session(page, "session.json")
     await page.goto("https://www.amazon.com.br")
