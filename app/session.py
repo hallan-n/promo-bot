@@ -74,7 +74,7 @@ async def inject_session(
     for origin_data in data.get("origins", []):
         origin = origin_data["origin"]
 
-        await page.goto(origin)
+        await page.goto(origin, wait_until="networkidle")
 
         await page.evaluate(
             """

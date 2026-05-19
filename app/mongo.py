@@ -1,5 +1,6 @@
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
+from consts import MONGO_URI
 
 client: AsyncIOMotorClient | None = None
 
@@ -8,9 +9,7 @@ async def get_database():
     global client
 
     if client is None:
-        client = AsyncIOMotorClient(
-            "mongodb+srv://neves:12qwaszx@promobot.fpsdl8v.mongodb.net/?appName=PromoBOT"
-        )
+        client = AsyncIOMotorClient(MONGO_URI)
 
     return client["my_database"]
 

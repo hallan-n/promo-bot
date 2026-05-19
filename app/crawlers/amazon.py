@@ -57,8 +57,8 @@ async def get_products(
     browser: Browser,
     departament_code: str,
     product_limit: int,
-    min_discount: int,
-    max_discount: int,
+    min_discount: int = 1,
+    max_discount: int = 100,
 ) -> list[Product]:
 
     page = await browser.new_page()
