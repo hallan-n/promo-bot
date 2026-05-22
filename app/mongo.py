@@ -58,27 +58,3 @@ async def find_by_id(collection, id: str):
         document["_id"] = str(document["_id"])
 
     return document
-
-
-import asyncio
-
-
-async def main():
-    db = await get_database()
-
-    users = db["users"]
-
-    user = await find_many(users)
-    # user = await find_one(
-    #     users,
-    #     {"name": "Hállan"}
-    # )
-
-    print(user)
-
-    # await insert_one(users, {
-    #     "name": "Hállan"
-    # })
-
-
-asyncio.run(main())

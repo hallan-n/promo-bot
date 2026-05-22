@@ -1,12 +1,10 @@
-import json
-from pathlib import Path
-
 from logger import logger
 from playwright.async_api import BrowserContext, Page
+from mongo import find_one, get_database, insert_one, update_one
 
 
-async def export_session(context: BrowserContext, file_path: str = "session.json"):
-    logger.info("Iniciando exportação da sessão")
+async def export_session(context: BrowserContext, provider: str):
+    logger.info("Salvando sessão em banco")
     pages = context.pages
 
     storage = {
@@ -53,20 +51,37 @@ async def export_session(context: BrowserContext, file_path: str = "session.json
                 "sessionStorage": data["sessionStorage"],
             }
         )
+    db = await get_database()
+    sessions = db["sessions"]
+    
+    has_session = await find_one(sessions, {
+        "provider": provider
+    })
 
-    Path(file_path).write_text(
-        json.dumps(storage, indent=4, ensure_ascii=False),
-        encoding="utf-8",
-    )
-    logger.info(f"Sessão exportada para o path {file_path}")
+    if has_session:
+        await update_one(sessions, has_session, {
+            "provider": provider,
+            "session": storage
+        })
+        return
+    
+    await insert_one(sessions, has_session, {
+            "provider": provider,
+            "session": storage
+        })
+
+    logger.info(f"Sessão atualizada no banco")
 
 
-async def inject_session(
-    page: Page,
-    file_path: str = "session.json",
-):
+async def inject_session(page: Page, provider: str):
     logger.info("Iniciando injeção de sessão")
-    data = json.loads(Path(file_path).read_text(encoding="utf-8"))
+    db = await get_database()
+    sessions = db["sessions"]
+    
+    session = await find_one(sessions, {
+        "provider": provider
+    })
+    data = session.get("session")
 
     if data.get("cookies"):
         await page.context.add_cookies(data["cookies"])
@@ -74,7 +89,7 @@ async def inject_session(
     for origin_data in data.get("origins", []):
         origin = origin_data["origin"]
 
-        await page.goto(origin, wait_until="networkidle")
+        await page.goto(origin, wait_until="domcontentloaded")
 
         await page.evaluate(
             """

@@ -28,6 +28,6 @@ class Product(Base):
     thumbnail: str
     fetched_at: str = datetime.now().isoformat()
 
-    # def __post_init__(self):
-    #     self.original_price = to_brl(self.original_price)
-    #     self.price_discount = to_brl(self.price_discount)
+
+def to_list_dict(products: list[Product]):
+    return [p.dict() for p in products]

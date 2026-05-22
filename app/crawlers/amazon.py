@@ -62,7 +62,7 @@ async def get_products(
 ) -> list[Product]:
 
     page = await browser.new_page()
-    await inject_session(page, "session.json")
+    await inject_session(page, "amazon")
     await page.goto("https://www.amazon.com.br")
 
     def compact(obj):
@@ -117,6 +117,6 @@ async def get_products(
     products = [r for r in results if not isinstance(r, Exception)]
 
     await page.close()
-    logger.info(f"{len(products)} produtos capturados")
+    logger.info(f"Amazon - {len(products)} produtos capturados")
 
     return products
