@@ -133,7 +133,7 @@ async def get_products(
 
     pages: list[Page] = await asyncio.gather(*tasks)
     responses = [(await get_dict_response(page), page) for page in pages]
-    
+
     semaphore = asyncio.Semaphore(2)
 
     async def process_products(response, page):

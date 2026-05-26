@@ -1,6 +1,6 @@
 from bson import ObjectId
-from motor.motor_asyncio import AsyncIOMotorClient
 from consts import MONGO_URI
+from motor.motor_asyncio import AsyncIOMotorClient
 
 client: AsyncIOMotorClient | None = None
 

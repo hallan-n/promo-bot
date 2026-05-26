@@ -1,6 +1,6 @@
 from logger import logger
-from playwright.async_api import BrowserContext, Page
 from mongo import find_one, get_database, insert_one, update_one
+from playwright.async_api import BrowserContext, Page
 
 
 async def export_session(context: BrowserContext, provider: str):
@@ -53,22 +53,16 @@ async def export_session(context: BrowserContext, provider: str):
         )
     db = await get_database()
     sessions = db["sessions"]
-    
-    has_session = await find_one(sessions, {
-        "provider": provider
-    })
+
+    has_session = await find_one(sessions, {"provider": provider})
 
     if has_session:
-        await update_one(sessions, has_session, {
-            "provider": provider,
-            "session": storage
-        })
+        await update_one(
+            sessions, has_session, {"provider": provider, "session": storage}
+        )
         return
-    
-    await insert_one(sessions, has_session, {
-            "provider": provider,
-            "session": storage
-        })
+
+    await insert_one(sessions, has_session, {"provider": provider, "session": storage})
 
     logger.info(f"Sessão atualizada no banco")
 
@@ -77,10 +71,8 @@ async def inject_session(page: Page, provider: str):
     logger.info("Iniciando injeção de sessão")
     db = await get_database()
     sessions = db["sessions"]
-    
-    session = await find_one(sessions, {
-        "provider": provider
-    })
+
+    session = await find_one(sessions, {"provider": provider})
     data = session.get("session")
 
     if data.get("cookies"):

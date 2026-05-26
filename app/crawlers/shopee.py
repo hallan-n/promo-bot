@@ -2,13 +2,12 @@ import asyncio
 import json
 import math
 import re
+from urllib.parse import urlencode
 
 from logger import logger
 from models import Product, to_brl
 from playwright.async_api import Browser, Page
-from session import inject_session, export_session
-from urllib.parse import urlencode
-
+from session import export_session, inject_session
 
 
 def build_pdp_url(data: dict) -> str:
@@ -18,18 +17,15 @@ def build_pdp_url(data: dict) -> str:
         "display_model_id": item["item_card_display_price"]["model_id"],
         "item_id": item["itemid"],
         "shop_id": item["shopid"],
-
         # parâmetros praticamente fixos
         "tz_offset_in_minutes": -180,
         "detail_level": 0,
         "incoming_pdp_page_source": 0,
-        "incoming_pdp_page_scenario": 0
+        "incoming_pdp_page_scenario": 0,
     }
 
-    return (
-        "https://shopee.com.br/api/v4/pdp/get_pc?"
-        + urlencode(params)
-    )
+    return "https://shopee.com.br/api/v4/pdp/get_pc?" + urlencode(params)
+
 
 def build_product(data: dict) -> "Product":
     data = data["data"]
@@ -41,7 +37,7 @@ def build_product(data: dict) -> "Product":
     item_id = item["item_id"]
     shop_id = item["shop_id"]
 
-    original_price = product_price["price_before_discount"]["single_value"] / 100000      
+    original_price = product_price["price_before_discount"]["single_value"] / 100000
     price_discount = product_price["price"]["single_value"] / 100000
     payment_condition = f'em até {installment["month"]}x sem juros'
 
@@ -55,7 +51,7 @@ def build_product(data: dict) -> "Product":
         cupom="",  # não encontrei no retorno
         discount=f'{product_price["discount"]}% OFF',
         url=url,
-        thumbnail=f"https://cf.shopee.com.br/file/{item['image']}"
+        thumbnail=f"https://cf.shopee.com.br/file/{item['image']}",
     )
 
 
@@ -106,11 +102,13 @@ async def get_affiliate_link(page: Page, product_url: str):
             return await response.json();
         }
         """,
-        product_url
+        product_url,
     )
 
+
 async def get_product_details(page: Page, url: str):
-    return await page.evaluate("""
+    return await page.evaluate(
+        """
         async (url) => {
             const response = await fetch(url,
                 {
@@ -126,8 +124,11 @@ async def get_product_details(page: Page, url: str):
 
             return await response.json();
         }
-        """, url)
-    
+        """,
+        url,
+    )
+
+
 async def get_products(browser: Browser) -> list[Product]:
     page = await browser.new_page()
     await inject_session(page, "shopee.json")
@@ -146,8 +147,7 @@ async def get_products(browser: Browser) -> list[Product]:
     page.on("response", capture)
 
     await page.goto(
-        "https://shopee.com.br/collections/18482320",
-        wait_until="networkidle"
+        "https://shopee.com.br/collections/18482320", wait_until="networkidle"
     )
 
     while result is None:
