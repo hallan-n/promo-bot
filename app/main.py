@@ -11,6 +11,7 @@ from models import to_list_dict
 from mongo import find_many, find_one, get_database, insert_one, update_one
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
+from logger import logger
 
 app = FastAPI()
 
@@ -99,7 +100,7 @@ async def run_scrape(job_id: str):
             {"_id": job_id},
             {"status": "success", "finished_at": datetime.utcnow(), "message": None},
         )
-
+        logger.info(f"Sucesso ao raspar produtos pro JobID {job_id}")
     except Exception as e:
         await update_one(
             jobs_db,
@@ -127,7 +128,7 @@ async def trigger_scrape():
     )
 
     asyncio.create_task(run_scrape(job_id))
-
+    logger.info(f"Iniciando raspagem de produtos para o JobID {job_id}")
     return {"job_id": job_id, "status": "running"}
 
 
@@ -139,8 +140,10 @@ async def get_status(job_id: str):
     job = await find_one(jobs_db, {"_id": job_id})
 
     if not job:
+        logger.error(f"Erro ao consultar o JobID {job_id}")
         return {"error": "job not found"}
-
+    
+    logger.info(f"Consulta realizada para o JobID {job_id}")
     return job
 
 
@@ -157,7 +160,7 @@ async def get_products(created_at: str = None, group_name: str = None):
 
     db = await get_database()
     products_db = db["products"]
-
+    logger.info(f"Consulta de produtos realizada com sucesso")
     return await find_many(products_db, filters)
 
 
