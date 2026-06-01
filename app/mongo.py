@@ -1,23 +1,37 @@
 from bson import ObjectId
 from consts import MONGO_URI
 from motor.motor_asyncio import AsyncIOMotorClient
+import random
 
-client: AsyncIOMotorClient | None = None
+
+client = AsyncIOMotorClient(MONGO_URI)
+db = client["my_database"]
 
 
 async def get_database():
-    global client
-
-    if client is None:
-        client = AsyncIOMotorClient(MONGO_URI)
-
-    return client["my_database"]
-
+    return db
 
 async def insert_one(collection, data: dict):
     result = await collection.insert_one(data)
     return str(result.inserted_id)
 
+async def find_random_product(collection, query: dict | None = None):
+    query = query or {}
+
+    document = await collection.aggregate([
+        {"$match": query},
+        {"$sample": {"size": 1}}
+    ]).to_list(length=1)
+
+    if not document:
+        return None
+
+    products = document[0].get("products", [])
+
+    if not products:
+        return None
+
+    return random.choice(products)
 
 async def find_one(collection, filters: dict):
     document = await collection.find_one(filters)
